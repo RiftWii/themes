@@ -1,0 +1,9 @@
+# SPDX-FileCopyrightText: 2026 RiftWii contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# SHA-256 hashes of files that must not be in a theme: Nintendo material
+# found in a submission, or anything removed after a takedown. A match is a
+# warning in validate.yml, not an error, because a person reviews it.
+#
+# One per line: <sha256> <reason>. This repository never holds the files
+# themselves, only their hashes. Empty for now.

@@ -1,0 +1,97 @@
+# SPDX-FileCopyrightText: 2026 RiftWii contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# On every push to main: check the themes again, zip each one
+# deterministically, write themes.json and deploy it all to GitHub Pages.
+# The repository's Settings > Pages source must be "GitHub Actions".
+name: publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancel one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  RIFTWII_REPO: KakarottoCake/Riftwii
+  RIFTWII_REF: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out RiftWii's theme parser
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RIFTWII_REPO }}
+          ref: ${{ env.RIFTWII_REF }}
+          path: riftwii
+          persist-credentials: false
+          sparse-checkout: |
+            src/art/theme.cpp
+            include/riftwii/theme.hpp
+          sparse-checkout-cone-mode: false
+
+      - name: Build theme_check
+        run: sh scripts/build_theme_check.sh riftwii "$RUNNER_TEMP/theme_check"
+
+      # Merged themes passed validate.yml, but RiftWii's rules may have
+      # changed since (a new RIFTWII_REF); never publish a theme that would
+      # now fail.
+      - name: Validate every theme
+        run: >
+          python3 -I scripts/validate_theme.py
+          --theme-check "$RUNNER_TEMP/theme_check"
+          --flagged scripts/flagged-sha256.txt
+          --approved scripts/approved-licenses.txt
+          --all themes
+
+      - name: Configure Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build zips and themes.json
+        run: >
+          python3 -I scripts/build_index.py
+          --theme-check "$RUNNER_TEMP/theme_check"
+          --themes themes
+          --out site
+          --base-url "${{ steps.pages.outputs.base_url }}"
+
+      # TODO: preview renders. RiftWii's theme kit paints single template
+      # pictures in a theme's colours (tools/theme_kit.cpp), not a whole
+      # menu screen, so there is nothing to call here yet. Once the kit
+      # gains a "render one screen" mode, build it from the RiftWii checkout
+      # (it needs the host library, so a full checkout and cmake) and write
+      # site/previews/<folder>.png before build_index.py runs. Until then
+      # build_index.py uses the theme's background.png, when it has one.
+
+      - name: Upload the site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

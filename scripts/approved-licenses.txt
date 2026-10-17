@@ -1,0 +1,8 @@
+# SPDX-FileCopyrightText: 2026 RiftWii contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Licenses other than CC0-1.0, CC-BY-4.0 and CC-BY-SA-4.0 that the
+# maintainers approved for one theme (CONTENT-RULES.md). Only a maintainer
+# edits this file, in its own commit, so each approval shows in history.
+#
+# One per line: <theme folder> <SPDX license id>. Empty for now.

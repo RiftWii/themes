@@ -1,0 +1,78 @@
+# SPDX-FileCopyrightText: 2026 RiftWii contributors
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+# Checks every pull request: the description's tick boxes, and every theme
+# folder against RiftWii's own rules (README.md, "What the check does").
+#
+# Safety: this runs on pull_request, not pull_request_target, so it gets a
+# read-only token and no secrets. The scripts it runs come from the base
+# branch (trusted/), never from the pull request (pr/), so a submission
+# can't change the checks that judge it; the pull request's files are only
+# read as data.
+name: validate
+
+on:
+  pull_request:
+    # "edited" so ticking the boxes in the description runs the check again.
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+env:
+  # The RiftWii revision whose theme parser and picture list the themes are
+  # checked against. TODO for the maintainers: main, or the latest release
+  # tag (see README.md, "Open questions").
+  RIFTWII_REPO: KakarottoCake/Riftwii
+  RIFTWII_REF: main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the checks (base branch)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: trusted
+          persist-credentials: false
+
+      - name: Check out the pull request
+        uses: actions/checkout@v4
+        with:
+          path: pr
+          persist-credentials: false
+
+      - name: Check out RiftWii's theme parser
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.RIFTWII_REPO }}
+          ref: ${{ env.RIFTWII_REF }}
+          path: riftwii
+          persist-credentials: false
+          # theme.cpp needs only its header, so skip the rest of the repo.
+          sparse-checkout: |
+            src/art/theme.cpp
+            include/riftwii/theme.hpp
+          sparse-checkout-cone-mode: false
+
+      - name: Build theme_check
+        run: sh trusted/scripts/build_theme_check.sh riftwii "$RUNNER_TEMP/theme_check"
+
+      - name: Tick boxes in the description
+        run: >
+          python3 -I trusted/scripts/check_pr_body.py
+          --template trusted/.github/PULL_REQUEST_TEMPLATE.md
+          --event "$GITHUB_EVENT_PATH"
+
+      - name: Theme folders
+        run: >
+          python3 -I trusted/scripts/validate_theme.py
+          --theme-check "$RUNNER_TEMP/theme_check"
+          --flagged trusted/scripts/flagged-sha256.txt
+          --approved trusted/scripts/approved-licenses.txt
+          --all pr/themes
