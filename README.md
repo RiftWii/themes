@@ -1,10 +1,7 @@
 # RiftWii community themes
 
-> **Draft.** This is a proposal for the RiftWii maintainers to discuss. It
-> has not been published anywhere. See [Open questions](#open-questions).
-
 A list of menu themes for [RiftWii](https://github.com/KakarottoCake/Riftwii),
-made by its players. It is meant to live at
+made by its players. It lives at
 [github.com/RiftWii/themes](https://github.com/RiftWii/themes), and GitHub
 Pages serves every theme as a zip under **https://riftwii.github.io/themes/**,
 plus one `themes.json` there that lists them all
