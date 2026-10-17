@@ -4,8 +4,11 @@
 > has not been published anywhere. See [Open questions](#open-questions).
 
 A list of menu themes for [RiftWii](https://github.com/KakarottoCake/Riftwii),
-made by its players. GitHub Pages serves every theme as a zip, plus one
-`themes.json` that lists them all. In future RiftWii could browse that
+made by its players. It is meant to live at
+[github.com/RiftWii/themes](https://github.com/RiftWii/themes), and GitHub
+Pages serves every theme as a zip under **https://riftwii.github.io/themes/**,
+plus one `themes.json` there that lists them all
+(https://riftwii.github.io/themes/themes.json). In future RiftWii could browse that
 list and install a theme straight to the SD card. Until then, download a
 zip, unpack it into `sd:/riftwii/themes/` and pick the theme under
 Settings > **Theme**.
@@ -120,17 +123,23 @@ It checks every theme again, then builds the site:
       "name": "Tidepool",
       "author": "RiftWii contributors",
       "license": "CC0-1.0",
-      "size": 13674,
+      "size": 13673,
       "sha256": "…",
       "files": 5,
       "unpacked_size": 14029,
       "has_music": false,
-      "zip": "https://<owner>.github.io/riftwii-themes/themes/Tidepool.zip",
-      "preview": "https://<owner>.github.io/riftwii-themes/previews/Tidepool.png"
+      "zip": "https://riftwii.github.io/themes/themes/Tidepool.zip",
+      "preview": "https://riftwii.github.io/themes/previews/Tidepool.png"
     }
   ]
 }
 ```
+
+The base URL in `themes.json` comes from [site-url.txt](site-url.txt), the
+one place it is written down. Change that file if the site moves. The URLs
+deliberately don't follow wherever Pages serves the repository, so a fork's
+publish can't point the list somewhere else; publish.yml warns when the two
+disagree.
 
 ## For a future in-app browser
 
@@ -154,7 +163,8 @@ Pages site. So RiftWii itself must still:
 - unpack into a temporary folder and move it into place only when
   everything checked out.
 
-No new certificate is needed. `*.github.io` is served with a Let's Encrypt
+No new certificate is needed. `riftwii.github.io` is covered by the
+`*.github.io` certificate, which is served with a Let's Encrypt
 certificate. On 2026-10-17 its chain was `*.github.io` ← YR1 ← ISRG
 Root YR, cross-signed by **ISRG Root X1**, which RiftWii already trusts in
 `wii/online/tlsroots.c` for release downloads. When Let's Encrypt stops
@@ -172,9 +182,9 @@ GPL does not apply to themes.
 
 For the maintainers to decide before this goes public:
 
-1. **Where it lives.** A `riftwii-themes` repository under
-   KakarottoCake, or under an organization? The Pages URL (and so the URL
-   built into RiftWii) depends on it.
+1. **RiftWii itself.** The checks build against `KakarottoCake/Riftwii`
+   (`RIFTWII_REPO` in both workflows). If RiftWii moves into the RiftWii
+   organization, change it there.
 2. **Takedown contact and time.** CONTENT-RULES.md has
    `TODO-maintainer-contact` and `TODO-time` placeholders.
 3. **Which RiftWii the checks follow.** `RIFTWII_REF` is `main`. A release

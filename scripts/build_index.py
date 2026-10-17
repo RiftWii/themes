@@ -3,7 +3,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Builds the GitHub Pages site: one zip per theme and themes.json.
 
-    build_index.py --theme-check BIN --themes themes --out site --base-url URL
+    build_index.py --theme-check BIN --themes themes --out site [--base-url URL]
+
+The base URL the zips and previews are served under comes from
+site-url.txt at the repository's root, the one place it is written down;
+--base-url overrides it for a local test.
 
 Run it only on themes that passed validate_theme.py (publish.yml does both).
 
@@ -32,6 +36,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_theme import parse_ini_with_riftwii, read_license  # noqa: E402
 
 INDEX_SCHEMA = 1
+SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
 ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 
@@ -60,10 +65,11 @@ def main():
     parser.add_argument("--theme-check", required=True)
     parser.add_argument("--themes", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
-    parser.add_argument("--base-url", required=True, help="where the site is served, e.g. https://owner.github.io/riftwii-themes/")
+    parser.add_argument("--base-url", help="where the site is served; default: site-url.txt")
     args = parser.parse_args()
 
-    base_url = args.base_url.rstrip("/") + "/"
+    base_url = args.base_url or SITE_URL_FILE.read_text(encoding="utf-8").strip()
+    base_url = base_url.rstrip("/") + "/"
     (args.out / "themes").mkdir(parents=True, exist_ok=True)
     (args.out / "previews").mkdir(parents=True, exist_ok=True)
 
