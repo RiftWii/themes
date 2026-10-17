@@ -36,7 +36,7 @@ folder.
 
 ```
 themes/
-  Tidepool/            the folder name: 1-32 letters, digits, _ or -
+  MyTheme/             the folder name: 1-32 letters, digits, _ or -
     theme.ini          required: name, author, colours, shape
     LICENSE            required: license, author and credits
     background.png     optional pictures, each exactly the size RiftWii needs
@@ -59,7 +59,7 @@ holds only files RiftWii uses:
 
 There are no subfolders, hidden files, symlinks, previews or read-me
 files: RiftWii would ignore them, and every extra byte is downloaded to a
-Wii. [themes/Tidepool](themes/Tidepool) is a complete example (CC0).
+Wii.
 
 ## What the check does
 
@@ -119,8 +119,8 @@ It checks every theme again, then builds the site:
   "commit": "<the commit it was built from>",
   "themes": [
     {
-      "folder": "Tidepool",
-      "name": "Tidepool",
+      "folder": "MyTheme",
+      "name": "My Theme",
       "author": "RiftWii contributors",
       "license": "CC0-1.0",
       "size": 13673,
@@ -128,8 +128,8 @@ It checks every theme again, then builds the site:
       "files": 5,
       "unpacked_size": 14029,
       "has_music": false,
-      "zip": "https://riftwii.github.io/themes/themes/Tidepool.zip",
-      "preview": "https://riftwii.github.io/themes/previews/Tidepool.png"
+      "zip": "https://riftwii.github.io/themes/themes/MyTheme.zip",
+      "preview": "https://riftwii.github.io/themes/previews/MyTheme.png"
     }
   ]
 }

@@ -74,7 +74,8 @@ def main():
     (args.out / "previews").mkdir(parents=True, exist_ok=True)
 
     entries = []
-    for theme_dir in sorted(path for path in args.themes.iterdir() if path.is_dir()):
+    theme_dirs = sorted(path for path in args.themes.iterdir() if path.is_dir()) if args.themes.is_dir() else []
+    for theme_dir in theme_dirs:
         folder = theme_dir.name
         name, author, _notes = parse_ini_with_riftwii(args.theme_check, theme_dir / "theme.ini")
         license_fields = read_license((theme_dir / "LICENSE").read_text(encoding="utf-8"))
@@ -116,6 +117,16 @@ def main():
     }
     (args.out / "themes.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {args.out / 'themes.json'} with {len(entries)} theme(s)")
+
+    # A small page for people who open the site in a browser; RiftWii
+    # itself only reads themes.json.
+    count = f"{len(entries)} theme" + ("" if len(entries) == 1 else "s")
+    (args.out / "index.html").write_text(
+        "<!doctype html><meta charset=utf-8><title>RiftWii themes</title>\n"
+        "<h1>RiftWii themes</h1>\n"
+        f"<p>{count}. The list RiftWii reads is <a href=themes.json>themes.json</a>.</p>\n"
+        "<p>To submit a theme, see <a href=https://github.com/RiftWii/themes>github.com/RiftWii/themes</a>.</p>\n",
+        encoding="utf-8")
     return 0
 
 

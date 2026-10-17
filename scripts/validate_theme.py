@@ -451,11 +451,19 @@ def main():
     report = Report()
     if args.all:
         for entry in sorted(args.all.iterdir()):
+            # themes/README.md explains the folder; it is not a theme.
+            if entry.name == "README.md" and entry.is_file() and not entry.is_symlink():
+                continue
             if entry.is_dir() and not entry.is_symlink():
                 theme_dirs.append(entry)
             else:
                 report.error(f"themes/{entry.name}", "only theme folders belong in themes/")
     if not theme_dirs and report.errors == 0:
+        # An empty themes/ is fine with --all (the repository starts that
+        # way, and a pull request may only change the docs).
+        if args.all:
+            print("no themes yet: nothing to check")
+            return 0
         parser.error("no themes to check")
 
     image_sizes = load_image_sizes(args.theme_check)

@@ -74,8 +74,7 @@ Third-party parts:
 - music.ogg: "Song Title" by Someone, https://example.org/song, CC-BY-4.0
 ```
 
-Write "Third-party parts: none" if everything is yours. See
-[themes/Tidepool/LICENSE](themes/Tidepool/LICENSE) for a complete example.
+Write "Third-party parts: none" if everything is yours.
 
 ## Takedown
 
