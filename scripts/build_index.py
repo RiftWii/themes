@@ -33,7 +33,7 @@ from pathlib import Path
 # Run with "python3 -I", which leaves the script's own folder off the path.
 sys.dont_write_bytecode = True  # keep __pycache__ out of the checkout
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_theme import parse_ini_with_riftwii, read_license  # noqa: E402
+from validate_theme import PREVIEW_NAME, parse_ini_with_riftwii, read_license  # noqa: E402
 
 INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
@@ -43,7 +43,8 @@ ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 def build_zip(theme_dir, zip_path):
     """Writes the theme's zip and returns (file count, unpacked bytes)."""
-    names = sorted(entry.name for entry in theme_dir.iterdir() if entry.is_file())
+    # preview.png is for the website, not the Wii, so it stays out.
+    names = sorted(entry.name for entry in theme_dir.iterdir() if entry.is_file() and entry.name != PREVIEW_NAME)
     unpacked = 0
     with zipfile.ZipFile(zip_path, "w") as archive:
         for name in names:
@@ -84,15 +85,16 @@ def main():
         zip_path = args.out / "themes" / f"{folder}.zip"
         file_count, unpacked = build_zip(theme_dir, zip_path)
 
-        # TODO: render a real menu preview. RiftWii's theme kit
-        # (tools/theme_kit.cpp) paints each template picture in a theme's
-        # colours, but not a whole screen; a preview needs either a host
-        # build of the menu's layout or a "preview" mode added to the kit.
-        # Until then the theme's own background stands in, when it has one.
+        # The submitter's own screenshot (preview.png) when there is one,
+        # else the theme's background. A rendered menu screen would be
+        # better, but RiftWii's theme kit (tools/theme_kit.cpp) paints
+        # single pictures, not whole screens.
         preview = None
-        if (theme_dir / "background.png").is_file():
-            shutil.copyfile(theme_dir / "background.png", args.out / "previews" / f"{folder}.png")
-            preview = f"{base_url}previews/{folder}.png"
+        for candidate in (PREVIEW_NAME, "background.png"):
+            if (theme_dir / candidate).is_file():
+                shutil.copyfile(theme_dir / candidate, args.out / "previews" / f"{folder}.png")
+                preview = f"{base_url}previews/{folder}.png"
+                break
 
         entries.append({
             "folder": folder,

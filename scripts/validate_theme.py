@@ -57,6 +57,12 @@ MAX_MUSIC_SECONDS = 6 * 60
 # hundred themes under GitHub Pages' 1 GB site limit.
 MAX_THEME_BYTES = 10 * 1024 * 1024
 MAX_LICENSE_BYTES = 64 * 1024
+# preview.png is a screenshot for the website only: it is left out of the
+# zip, so it never reaches a Wii, but it still counts towards the theme's
+# size in the repository. A menu screenshot is 640x480.
+PREVIEW_NAME = "preview.png"
+PREVIEW_SIZE = (640, 480)
+MAX_PREVIEW_BYTES = 1024 * 1024
 
 # Folder names become zip names, URLs and folders on a FAT32 SD card.
 # RiftWii's own update pack also allows spaces (theme_pack_name_ok in
@@ -64,7 +70,7 @@ MAX_LICENSE_BYTES = 64 * 1024
 FOLDER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 
 FIXED_FILES = {"theme.ini", "LICENSE"}
-OPTIONAL_FILES = {"music.ogg", "hover.wav", "click.wav", "home_open.wav", "home_close.wav"}
+OPTIONAL_FILES = {"music.ogg", "hover.wav", "click.wav", "home_open.wav", "home_close.wav", PREVIEW_NAME}
 REQUIRED_FILES = {"theme.ini", "LICENSE"}
 
 # SPDX identifiers. Anything else needs the maintainers' approval, recorded
@@ -78,6 +84,11 @@ SUSPICIOUS_WORDS = re.compile(
     r"|totaka|system menu|\.brstm|\.brsar|\.tpl\b|\.arc\b",
     re.IGNORECASE,
 )
+
+
+# The notes src/art/theme.cpp writes for a section or key it doesn't
+# know, as opposed to a known key with a bad value.
+UNKNOWN_NAME_NOTE = re.compile(r": unknown (?:section|key|colour key) ")
 
 
 class Report:
@@ -321,7 +332,7 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
 
     for name in sorted(set(files) - allowed):
         report.error(f"{where}/{name}", "not a file RiftWii uses; allowed are theme.ini, LICENSE, "
-                                         "music.ogg, the four sound WAVs and the pictures in docs/THEMES.md")
+                                         "music.ogg, the four sound WAVs, preview.png and the pictures in docs/THEMES.md")
     for name in sorted(REQUIRED_FILES - set(files)):
         report.error(where, f"{name} is missing")
 
@@ -340,7 +351,12 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
         if digest in flagged:
             report.warning(file_where, f"matches a flagged file ({flagged[digest]}); a maintainer must check it")
 
-        if name in image_sizes:
+        if name == PREVIEW_NAME:
+            if size > MAX_PREVIEW_BYTES:
+                report.error(file_where, f"{size} bytes; a preview may be at most {MAX_PREVIEW_BYTES} bytes")
+            else:
+                check_png(name, data, size, PREVIEW_SIZE, file_where, report)
+        elif name in image_sizes:
             check_png(name, data, size, image_sizes[name], file_where, report)
         elif name == "music.ogg":
             check_music(data, size, file_where, report)
@@ -368,7 +384,9 @@ def check_png(name, data, size, expected, where, report):
     except ValueError as problem:
         report.error(where, str(problem))
         return
-    if (width, height) != expected:
+    if (width, height) != expected and name == PREVIEW_NAME:
+        report.error(where, f"is {width}x{height}; a preview is a {expected[0]}x{expected[1]} menu screenshot")
+    elif (width, height) != expected:
         report.error(where, f"is {width}x{height}; RiftWii needs exactly {expected[0]}x{expected[1]} "
                             f"for {name} (a picture of any other size is skipped)")
     if SUSPICIOUS_WORDS.search(text):
@@ -405,7 +423,14 @@ def check_ini(path, theme_check, folder, where, report):
     # list it is almost always a typo the author would want to know about,
     # so every note RiftWii would log fails the check here.
     for note in notes:
-        report.error(file_where, f"RiftWii would skip this: {note}")
+        # A name RiftWii doesn't know (a section or key) only warns: it may
+        # be a setting from a newer RiftWii than RIFTWII_REF, and the Wii
+        # ignores it harmlessly. A known key with a value RiftWii can't read
+        # is always the author's mistake, so that fails.
+        if UNKNOWN_NAME_NOTE.search(note):
+            report.warning(file_where, f"RiftWii (at RIFTWII_REF) doesn't know this, so it is ignored: {note}")
+        else:
+            report.error(file_where, f"RiftWii would skip this: {note}")
     if not name:
         report.error(file_where, "[theme] name is missing; the theme list shows it")
     if not author:

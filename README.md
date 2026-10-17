@@ -45,21 +45,31 @@ themes/
     music.ogg          optional menu music (Ogg Vorbis)
     click.wav          optional sound effects: hover, click,
                        home_open, home_close
+    preview.png        optional 640x480 screenshot for the website
 ```
 
-The folder is copied as it is to `sd:/riftwii/themes/<folder>/`, so it
-holds only files RiftWii uses:
+The folder (all but `preview.png`) is copied as it is to
+`sd:/riftwii/themes/<folder>/`, so it holds only files RiftWii uses:
 
 - `theme.ini`, with `name` and `author` under `[theme]`;
 - `LICENSE` (format in [CONTENT-RULES.md](CONTENT-RULES.md#the-license-file));
 - any of the pictures listed in docs/THEMES.md, under the same name, at
   exactly the size listed there;
 - `music.ogg`;
-- `hover.wav`, `click.wav`, `home_open.wav`, `home_close.wav`.
+- `hover.wav`, `click.wav`, `home_open.wav`, `home_close.wav`, as plain
+  16-bit PCM WAV. RiftWii also plays AIFF, but the check reads only WAV;
+  in Audacity, File > Export Audio, "WAV", "Signed 16-bit PCM".
 
-There are no subfolders, hidden files, symlinks, previews or read-me
-files: RiftWii would ignore them, and every extra byte is downloaded to a
-Wii.
+Plus one file for the website only:
+
+- `preview.png`, a 640x480 screenshot of RiftWii's menu with your theme
+  (Dolphin's screenshot key makes one). It is shown on the site but left
+  out of the zip, so it never reaches a Wii. Without one, the site shows
+  your `background.png`, if you have one. It must not show game covers or
+  banners: they belong to the games' publishers (CONTENT-RULES.md).
+
+There are no subfolders, hidden files, symlinks or read-me files: RiftWii
+would ignore them, and every extra byte is downloaded to a Wii.
 
 ## What the check does
 
@@ -71,7 +81,8 @@ It fails if:
   out of the folder (`..`, `/`, `\`, `:`), or the entry is a symlink or a
   subfolder;
 - a picture is not a valid PNG at exactly the size RiftWii needs;
-- `theme.ini` has any line that RiftWii would skip, or no name or author;
+- `theme.ini` has a setting RiftWii can't read (a colour that isn't
+  `#RRGGBB`, `corners = round`), or no name or author;
 - `music.ogg` or a sound is not in a format RiftWii plays, or is over a
   limit below;
 - `LICENSE` does not name an allowed license or has no `Author:` line.
@@ -81,7 +92,11 @@ builds a tiny program ([scripts/theme_check.cpp](scripts/theme_check.cpp))
 against RiftWii's `src/art/theme.cpp`, so it accepts exactly what the Wii
 accepts. When RiftWii adds a picture or a setting, the check knows at once.
 
-It only warns, for a reviewer to look at, when a file's SHA-256 is in
+A section or key RiftWii doesn't know only warns: it may be a setting
+from a newer RiftWii than the one the check follows (`RIFTWII_REF`), and
+the Wii ignores it harmlessly. Still, check for typos (`cornrs`).
+
+It also only warns, for a reviewer to look at, when a file's SHA-256 is in
 [scripts/flagged-sha256.txt](scripts/flagged-sha256.txt), or when text in
 `theme.ini`, `LICENSE`, PNG text or music tags mentions things like
 "Nintendo" or "ripped from". No script can prove where a picture came from;
@@ -98,6 +113,7 @@ so a submission can't change the checks that judge it.
 | Each PNG | 2 MiB, exact size | RiftWii skips bigger or wrong-sized pictures (`kMaxPng`) |
 | `music.ogg` | 6 MiB, 6 minutes, Vorbis, 44.1/48 kHz | RiftWii skips music over 6 MiB. Six minutes is what 6 MiB holds at the quality docs/THEMES.md recommends, and a reviewer has to listen to all of it |
 | Each sound WAV | 1 MiB, 5 s, 16-bit PCM | RiftWii's own limits for sound effects |
+| `preview.png` | 1 MiB, 640x480 | One menu screenshot; it is only shown on the website |
 | Whole theme | 10 MiB | The largest music file plus about twice Bookshelf's pictures (2.2 MiB, the largest bundled theme). It keeps downloads on the Wii's Wi-Fi short and keeps about a hundred themes under GitHub Pages' 1 GB site limit |
 
 ## Publishing
@@ -108,9 +124,8 @@ It checks every theme again, then builds the site:
 - `themes/<folder>.zip`: the theme's files under `<folder>/`. The zips are
   deterministic (sorted entries, fixed dates and permissions), so a theme's
   SHA-256 only changes when the theme does.
-- `previews/<folder>.png`: for now the theme's own `background.png`, if it
-  has one. Rendering a real menu screenshot is a TODO. RiftWii's theme kit
-  paints single pictures, not whole screens.
+- `previews/<folder>.png`: the theme's `preview.png`, or else its
+  `background.png`, if it has one.
 - `themes.json`, then deploys it to GitHub Pages:
 
 ```json
@@ -180,7 +195,7 @@ GPL does not apply to themes.
 
 ## Open questions
 
-For the maintainers to decide before this goes public:
+Still for the maintainers to decide:
 
 1. **RiftWii itself.** The checks build against `KakarottoCake/Riftwii`
    (`RIFTWII_REPO` in both workflows). If RiftWii moves into the RiftWii
@@ -190,22 +205,30 @@ For the maintainers to decide before this goes public:
 3. **Which RiftWii the checks follow.** `RIFTWII_REF` is `main`. A release
    tag would be steadier, but then a new picture or setting can't be used
    until the next release.
-4. **Strict `theme.ini`.** The check fails on any line RiftWii would skip.
-   That catches typos, but a theme written for a newer RiftWii (a new key)
-   would fail against an older `RIFTWII_REF`.
-5. **Theme kit templates.** Many themes will start from the kit's
+4. **Theme kit templates.** Many themes will start from the kit's
    templates, which RiftWii's GPL code paints. Can a CC-licensed theme be
-   built on them? A line in the kit's README saying the templates are CC0
-   would settle it.
-6. **Other licenses.** Is CC0 / CC BY / CC BY-SA the right set? Exceptions
-   go in `scripts/approved-licenses.txt`.
-7. **Size budget.** Is a 10 MiB theme limit right? If the list grows past
-   Pages' 1 GB, the zips could move to GitHub Releases.
-8. **AIFF sounds.** RiftWii plays AIFF and WAVE_FORMAT_EXTENSIBLE sounds,
-   but the check (Python's `wave` module) reads only plain PCM WAV.
-   Requiring plain WAV seemed simpler than a second parser.
-9. **Previews.** Should the theme kit gain a mode that renders one menu
-   screen, so publish can make real previews? Or should submitters add a
-   screenshot?
-10. **Folder names with spaces.** RiftWii allows them in theme folders;
-   this repository doesn't, so URLs need no escaping.
+   built on them? That is for the RiftWii repository to say: a line in
+   `themes/kit/README.txt` putting the templates under CC0 would settle
+   it. Until then, submissions built on them are reviewed case by case.
+
+## Decided
+
+Settled for now, with the reason, so they can be revisited:
+
+- **`theme.ini` strictness.** A known key with a value RiftWii can't read
+  fails; an unknown section or key only warns. That catches the mistakes
+  without failing a theme made for a newer RiftWii.
+- **Licenses.** CC0, CC BY 4.0 and CC BY-SA 4.0. They cover giving work
+  away, wanting credit and wanting remixes to stay open. Anything else is
+  approved one theme at a time in `scripts/approved-licenses.txt`.
+- **Size budget.** 10 MiB per theme. Look again if the published site
+  passes 500 MB, half of Pages' 1 GB; the zips could then move to GitHub
+  Releases.
+- **Sounds.** Plain 16-bit PCM WAV only. Allowing AIFF would mean a second
+  parser for a format Audacity can convert away in one step.
+- **Previews.** An optional `preview.png` screenshot from the submitter,
+  falling back to `background.png`. Rendering previews in publish.yml would
+  need a whole-screen mode in RiftWii's theme kit; worth adding later, but
+  not needed to start.
+- **Folder names.** Letters, digits, `_` and `-`, no spaces, so URLs need no
+  escaping. RiftWii itself would accept spaces.

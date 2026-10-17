@@ -80,13 +80,11 @@ jobs:
           --themes themes
           --out site
 
-      # TODO: preview renders. RiftWii's theme kit paints single template
-      # pictures in a theme's colours (tools/theme_kit.cpp), not a whole
-      # menu screen, so there is nothing to call here yet. Once the kit
-      # gains a "render one screen" mode, build it from the RiftWii checkout
-      # (it needs the host library, so a full checkout and cmake) and write
-      # site/previews/<folder>.png before build_index.py runs. Until then
-      # build_index.py uses the theme's background.png, when it has one.
+      # Previews are the submitter's preview.png, or else background.png
+      # (build_index.py). A later improvement: render one menu screen per
+      # theme here, once RiftWii's theme kit (tools/theme_kit.cpp) can paint
+      # a whole screen rather than single pictures. That needs the host
+      # library, so a full RiftWii checkout and cmake.
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v3

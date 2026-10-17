@@ -32,6 +32,10 @@ scratch: rounded white tiles, a curved bottom bar or soft blue highlights
 are ideas, not copies. RiftWii's own default look is already drawn that
 way.
 
+A `preview.png` screenshot follows the same rule. Show the menu with no
+game covers, box art or banners (the names view with empty places works
+well): those pictures belong to the games' publishers.
+
 ## 3. Allowed licenses
 
 The theme's `LICENSE` file names one of these licenses, which covers the
