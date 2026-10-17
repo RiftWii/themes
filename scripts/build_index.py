@@ -37,6 +37,7 @@ from validate_theme import parse_ini_with_riftwii, read_license  # noqa: E402
 
 INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
+SITE_PAGE = Path(__file__).resolve().parent.parent / "web" / "index.html"
 ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 
@@ -118,15 +119,9 @@ def main():
     (args.out / "themes.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {args.out / 'themes.json'} with {len(entries)} theme(s)")
 
-    # A small page for people who open the site in a browser; RiftWii
-    # itself only reads themes.json.
-    count = f"{len(entries)} theme" + ("" if len(entries) == 1 else "s")
-    (args.out / "index.html").write_text(
-        "<!doctype html><meta charset=utf-8><title>RiftWii themes</title>\n"
-        "<h1>RiftWii themes</h1>\n"
-        f"<p>{count}. The list RiftWii reads is <a href=themes.json>themes.json</a>.</p>\n"
-        "<p>To submit a theme, see <a href=https://github.com/RiftWii/themes>github.com/RiftWii/themes</a>.</p>\n",
-        encoding="utf-8")
+    # The front page for people who open the site in a browser. It reads
+    # themes.json itself, so the same page serves any number of themes.
+    shutil.copyfile(SITE_PAGE, args.out / "index.html")
     return 0
 
 

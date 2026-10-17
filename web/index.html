@@ -1,0 +1,491 @@
+<!doctype html>
+<!--
+SPDX-FileCopyrightText: 2026 RiftWii contributors
+SPDX-License-Identifier: GPL-3.0-or-later
+
+The site's front page. scripts/build_index.py copies it next to themes.json;
+the theme list is filled in by the script at the bottom, from themes.json,
+so this file never changes when a theme is added.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RiftWii Themes</title>
+<meta name="description" content="Menu themes for RiftWii, the Wii mod loader. Download one for your SD card, or make your own.">
+<meta name="color-scheme" content="light dark">
+<style>
+/* Light grey stripes and channel-blue frames, after the Wii Menu's look,
+   drawn from scratch. Every colour is a token so dark mode only swaps them. */
+:root {
+  --bg: #eceef0;
+  --stripe: rgba(255, 255, 255, 0.55);
+  --surface: #ffffff;
+  --surface-2: #f5f7f8;
+  --fg: #1d2329;
+  --muted: #5d6873;
+  --line: #d3d9de;
+  --accent: #1fa9df;
+  --accent-strong: #0b86b8;
+  --accent-soft: #dff3fb;
+  --on-accent: #ffffff;
+  --shadow: 0 1px 2px rgba(20, 40, 60, 0.08), 0 6px 18px rgba(20, 40, 60, 0.08);
+  --radius: 18px;
+  --font: ui-rounded, "SF Pro Rounded", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12171c;
+    --stripe: rgba(255, 255, 255, 0.025);
+    --surface: #1b2228;
+    --surface-2: #222a31;
+    --fg: #e6ebef;
+    --muted: #97a3ae;
+    --line: #2f3a43;
+    --accent: #3cbcef;
+    --accent-strong: #7fd3f5;
+    --accent-soft: #15323f;
+    --on-accent: #06202b;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--fg);
+  background-color: var(--bg);
+  background-image: repeating-linear-gradient(0deg, var(--stripe) 0 2px, transparent 2px 6px);
+}
+a { color: var(--accent-strong); }
+a:focus-visible, button:focus-visible, input:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+
+/* Header */
+header.top { padding: 56px 0 28px; }
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand-mark {
+  width: 48px; height: 48px; border-radius: 14px;
+  background: linear-gradient(160deg, #3cc6f5, #0b86b8);
+  display: grid; place-items: center;
+  box-shadow: var(--shadow);
+}
+.brand-mark svg { width: 28px; height: 28px; }
+.brand-name { font-size: 15px; font-weight: 700; letter-spacing: 0.02em; color: var(--muted); }
+h1 {
+  font-size: clamp(2.1rem, 5vw, 3.2rem);
+  line-height: 1.1;
+  margin: 22px 0 12px;
+  letter-spacing: -0.01em;
+}
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 60ch; margin: 0 0 26px; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-weight: 650; font-size: 0.98rem;
+  padding: 11px 20px; border-radius: 999px;
+  text-decoration: none; cursor: pointer;
+  border: 2px solid var(--accent);
+  transition: transform 0.12s ease, background-color 0.12s ease;
+}
+.btn:hover { transform: translateY(-1px); }
+.btn.primary { background: var(--accent); color: var(--on-accent); }
+.btn.secondary { background: var(--surface); color: var(--accent-strong); }
+
+/* Sections */
+section { padding: 34px 0; }
+h2 { font-size: 1.55rem; margin: 0 0 6px; }
+.section-intro { color: var(--muted); margin: 0 0 22px; max-width: 65ch; }
+.section-head {
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between;
+  gap: 14px; margin-bottom: 20px;
+}
+.section-head .section-intro { margin: 0; }
+.search {
+  font: inherit; padding: 10px 16px; min-width: 240px;
+  border-radius: 999px; border: 2px solid var(--line);
+  background: var(--surface); color: var(--fg);
+}
+.search:focus { border-color: var(--accent); outline: none; }
+
+/* Theme cards: channel-shaped tiles */
+.grid {
+  display: grid; gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 2px solid var(--line);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex; flex-direction: column;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.preview {
+  aspect-ratio: 4 / 3;
+  background: var(--surface-2);
+  display: grid; place-items: center;
+  border-bottom: 1px solid var(--line);
+}
+.preview img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.preview .no-preview { color: var(--muted); font-size: 0.9rem; }
+.card-body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.card h3 { margin: 0; font-size: 1.12rem; overflow-wrap: anywhere; }
+.by { margin: 0; color: var(--muted); font-size: 0.92rem; overflow-wrap: anywhere; }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag {
+  font-size: 0.76rem; font-weight: 650;
+  padding: 2px 9px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-strong);
+}
+.card .btn { margin-top: auto; justify-content: center; padding: 9px 16px; }
+.hash { font-size: 0.8rem; color: var(--muted); }
+.hash summary { cursor: pointer; }
+.hash p { font-family: var(--mono); font-size: 0.7rem; overflow-wrap: anywhere; margin: 6px 0 0; }
+
+/* Empty state: blank channel slots waiting to be filled */
+.empty {
+  background: var(--surface);
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  padding: 26px;
+  text-align: center;
+}
+.slots {
+  display: grid; gap: 12px; margin: 0 auto 22px; max-width: 560px;
+  grid-template-columns: repeat(4, 1fr);
+}
+.slot {
+  aspect-ratio: 16 / 11; border-radius: 12px;
+  border: 2px solid var(--line); background: var(--surface-2);
+}
+.slot.lit { border-color: var(--accent); display: grid; place-items: center; color: var(--accent); font-size: 1.6rem; font-weight: 700; }
+.empty h3 { margin: 0 0 6px; font-size: 1.25rem; }
+.empty p { margin: 0 auto 18px; color: var(--muted); max-width: 52ch; }
+.empty .actions { justify-content: center; }
+.status { color: var(--muted); }
+
+/* Steps */
+.steps { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); counter-reset: step; }
+.step {
+  background: var(--surface); border-radius: var(--radius);
+  border: 1px solid var(--line); padding: 18px 18px 16px;
+  position: relative;
+}
+.step::before {
+  counter-increment: step; content: counter(step);
+  display: grid; place-items: center;
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--accent); color: var(--on-accent);
+  font-weight: 700; margin-bottom: 10px;
+}
+.step h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.step p { margin: 0; color: var(--muted); font-size: 0.95rem; }
+code {
+  font-family: var(--mono); font-size: 0.86em;
+  background: var(--accent-soft); color: var(--fg);
+  padding: 1px 6px; border-radius: 6px; overflow-wrap: anywhere;
+}
+
+/* Rules strip */
+.rules {
+  display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  margin-top: 20px;
+}
+.rule { display: flex; gap: 12px; align-items: flex-start; }
+.rule svg { flex: none; width: 22px; height: 22px; margin-top: 2px; color: var(--accent); }
+.rule p { margin: 0; font-size: 0.95rem; }
+
+/* Footer bar: the curved bottom bar of a console menu */
+footer {
+  margin-top: 40px;
+  background: var(--surface);
+  border-top: 3px solid var(--accent);
+  border-radius: 40px 40px 0 0;
+  padding: 26px 0 34px;
+  color: var(--muted); font-size: 0.92rem;
+}
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px 28px; }
+footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
+
+@media (max-width: 560px) {
+  header.top { padding-top: 36px; }
+  .search { min-width: 0; width: 100%; }
+  .slots { grid-template-columns: repeat(2, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="5" width="18" height="12" rx="3"/><path d="M8 21h8M12 17v4"/>
+        </svg>
+      </div>
+      <span class="brand-name">RIFTWII</span>
+    </div>
+    <h1>Themes for your RiftWii menu</h1>
+    <p class="lede">Give RiftWii a new look: its colours, tiles, background, music and sounds. Each theme here was made by the community and checked before it was added. All of them are free to download and share.</p>
+    <div class="actions">
+      <a class="btn primary" href="#themes">Browse themes</a>
+      <a class="btn secondary" href="#make">Make your own</a>
+    </div>
+  </div>
+</header>
+
+<main>
+  <section id="themes">
+    <div class="wrap">
+      <div class="section-head">
+        <div>
+          <h2>Themes</h2>
+          <p class="section-intro" id="count">Loading the list&hellip;</p>
+        </div>
+        <input class="search" id="search" type="search" placeholder="Search by name or author" aria-label="Search themes" hidden>
+      </div>
+      <div id="list" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="wrap">
+      <h2>Installing a theme</h2>
+      <p class="section-intro">You need the SD card RiftWii runs from and a computer that can open zip files.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>Download</h3>
+          <p>Pick a theme above and download its zip.</p>
+        </div>
+        <div class="step">
+          <h3>Copy to the SD card</h3>
+          <p>Unzip it into <code>sd:/riftwii/themes/</code>. The zip already holds the theme's folder, so you end up with <code>sd:/riftwii/themes/&lt;name&gt;/theme.ini</code>.</p>
+        </div>
+        <div class="step">
+          <h3>Choose it</h3>
+          <p>On the Wii, open RiftWii, go to <strong>Settings &gt; Menu &gt; Theme</strong> and step to the new theme. RiftWii offers to restart its menu to show it.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="make">
+    <div class="wrap">
+      <h2>Make your own</h2>
+      <p class="section-intro">A theme is a small folder: a <code>theme.ini</code> with its colours and shape, plus any pictures, music or sounds you want to replace. RiftWii's <a href="https://github.com/KakarottoCake/Riftwii/blob/main/docs/THEMES.md">theme guide</a> lists every picture and its exact size, and its theme kit can paint the pictures in your colours.</p>
+      <div class="steps">
+        <div class="step">
+          <h3>Build and try it</h3>
+          <p>Put your folder in <code>sd:/riftwii/themes/</code> and test it on your Wii, or in Dolphin.</p>
+        </div>
+        <div class="step">
+          <h3>Add a LICENSE</h3>
+          <p>Choose CC BY 4.0, CC BY-SA 4.0 or CC0, and credit anything you used from someone else.</p>
+        </div>
+        <div class="step">
+          <h3>Open a pull request</h3>
+          <p>Add your folder under <code>themes/</code> in <a href="https://github.com/RiftWii/themes">RiftWii/themes</a>. The automatic check tells you straight away if anything needs fixing.</p>
+        </div>
+      </div>
+
+      <div class="rules" aria-label="The rules in short">
+        <div class="rule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+          <p>Only artwork, music and fonts you made yourself, or have permission to share.</p>
+        </div>
+        <div class="rule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+          <p>No Nintendo material: no ripped Wii Menu music, sounds, icons or fonts.</p>
+        </div>
+        <div class="rule">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5zM8 7h6"/></svg>
+          <p>Every theme is free to share under its Creative Commons license. <a href="https://github.com/RiftWii/themes/blob/main/CONTENT-RULES.md">Read the full rules</a>.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>RiftWii Themes, made by the RiftWii community. Not affiliated with Nintendo.</span>
+    <nav aria-label="Links">
+      <a href="https://github.com/RiftWii/themes">Repository</a>
+      <a href="https://github.com/RiftWii/themes/blob/main/CONTENT-RULES.md">Content rules</a>
+      <a href="https://github.com/RiftWii/themes/issues/new?template=takedown.md">Report a theme</a>
+      <a href="themes.json">themes.json</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// Fills the theme list from themes.json. Every value from the file is put
+// in with textContent or checked URLs, never as HTML.
+(function () {
+  "use strict";
+  var list = document.getElementById("list");
+  var count = document.getElementById("count");
+  var search = document.getElementById("search");
+  var themes = [];
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  // Only links into this site are used, so a bad entry can't point
+  // a download or an image somewhere else.
+  function ownUrl(value) {
+    try {
+      var url = new URL(value, location.href);
+      return url.origin === location.origin ? url.href : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function formatSize(bytes) {
+    if (!(bytes >= 0)) return "";
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+
+  function licenseLabel(id) {
+    var names = { "CC0-1.0": "CC0", "CC-BY-4.0": "CC BY 4.0", "CC-BY-SA-4.0": "CC BY-SA 4.0" };
+    return names[id] || id || "";
+  }
+
+  function card(theme) {
+    var article = el("article", "card");
+
+    var preview = el("div", "preview");
+    var previewUrl = theme.preview ? ownUrl(theme.preview) : null;
+    if (previewUrl) {
+      var img = el("img");
+      img.src = previewUrl;
+      img.alt = "Preview of " + (theme.name || theme.folder);
+      img.loading = "lazy";
+      preview.appendChild(img);
+    } else {
+      preview.appendChild(el("span", "no-preview", "No preview yet"));
+    }
+    article.appendChild(preview);
+
+    var body = el("div", "card-body");
+    body.appendChild(el("h3", null, theme.name || theme.folder));
+    if (theme.author) body.appendChild(el("p", "by", "by " + theme.author));
+
+    var tags = el("div", "tags");
+    if (theme.license) tags.appendChild(el("span", "tag", licenseLabel(theme.license)));
+    if (theme.has_music) tags.appendChild(el("span", "tag", "Music"));
+    if (theme.size) tags.appendChild(el("span", "tag", formatSize(theme.size)));
+    body.appendChild(tags);
+
+    var zipUrl = ownUrl(theme.zip);
+    if (zipUrl) {
+      var download = el("a", "btn primary", "Download");
+      download.href = zipUrl;
+      download.setAttribute("download", "");
+      body.appendChild(download);
+    }
+    if (theme.sha256) {
+      // Tucked away: only people checking a download by hand want it.
+      var details = el("details", "hash");
+      details.appendChild(el("summary", null, "Checksum"));
+      details.appendChild(el("p", null, "SHA-256 " + theme.sha256));
+      body.appendChild(details);
+    }
+
+    article.appendChild(body);
+    return article;
+  }
+
+  function emptyState() {
+    var box = el("div", "empty");
+    var slots = el("div", "slots");
+    slots.setAttribute("aria-hidden", "true");
+    for (var i = 0; i < 8; i++) {
+      var slot = el("div", i === 0 ? "slot lit" : "slot", i === 0 ? "+" : null);
+      slots.appendChild(slot);
+    }
+    box.appendChild(slots);
+    box.appendChild(el("h3", null, "No themes yet"));
+    box.appendChild(el("p", null, "This collection has only just opened. Make the first theme, and it will appear here as soon as it's merged."));
+    var actions = el("div", "actions");
+    var make = el("a", "btn primary", "Make the first theme");
+    make.href = "#make";
+    actions.appendChild(make);
+    box.appendChild(actions);
+    return box;
+  }
+
+  function render() {
+    var query = search.value.trim().toLowerCase();
+    var shown = themes.filter(function (theme) {
+      if (!query) return true;
+      return ((theme.name || "") + " " + (theme.author || "") + " " + (theme.folder || ""))
+        .toLowerCase().indexOf(query) !== -1;
+    });
+
+    list.textContent = "";
+    if (themes.length === 0) {
+      count.textContent = "Themes appear here as soon as they're added.";
+      list.appendChild(emptyState());
+      return;
+    }
+    count.textContent = themes.length === 1 ? "1 theme to choose from." : themes.length + " themes to choose from.";
+    if (shown.length === 0) {
+      list.appendChild(el("p", "status", "No theme matches “" + search.value.trim() + "”."));
+      return;
+    }
+    var grid = el("div", "grid");
+    shown.forEach(function (theme) { grid.appendChild(card(theme)); });
+    list.appendChild(grid);
+  }
+
+  fetch("themes.json", { cache: "no-cache" })
+    .then(function (response) {
+      if (!response.ok) throw new Error(response.status);
+      return response.json();
+    })
+    .then(function (index) {
+      themes = Array.isArray(index.themes) ? index.themes.slice() : [];
+      themes.sort(function (a, b) {
+        return (a.name || a.folder || "").localeCompare(b.name || b.folder || "");
+      });
+      search.hidden = themes.length < 2;
+      render();
+    })
+    .catch(function () {
+      count.textContent = "";
+      list.textContent = "";
+      var message = el("p", "status", "The theme list didn't load. ");
+      var link = el("a", null, "Open themes.json");
+      link.href = "themes.json";
+      message.appendChild(link);
+      list.appendChild(message);
+    });
+
+  search.addEventListener("input", render);
+})();
+</script>
+</body>
+</html>
