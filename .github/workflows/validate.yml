@@ -18,6 +18,8 @@ on:
 
 permissions:
   contents: read
+  # To list the pull request's files (still read-only).
+  pull-requests: read
 
 concurrency:
   group: validate-${{ github.event.pull_request.number }}
@@ -63,11 +65,25 @@ jobs:
       - name: Build theme_check
         run: sh trusted/scripts/build_theme_check.sh riftwii "$RUNNER_TEMP/theme_check"
 
+      # Whether the pull request touches themes/ is asked of GitHub (with the
+      # read-only token), not read from the pull request's files or text, so
+      # it can't be talked out of the boxes. A renamed file lists its old
+      # name too, so moving a file out of themes/ counts.
+      - name: List the files the pull request changes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh api --paginate
+          "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files"
+          --jq '.[] | .filename, (.previous_filename // empty)'
+          > "$RUNNER_TEMP/changed-files.txt"
+
       - name: Tick boxes in the description
         run: >
           python3 -I trusted/scripts/check_pr_body.py
           --template trusted/.github/PULL_REQUEST_TEMPLATE.md
           --event "$GITHUB_EVENT_PATH"
+          --changed-files "$RUNNER_TEMP/changed-files.txt"
 
       - name: Theme folders
         run: >

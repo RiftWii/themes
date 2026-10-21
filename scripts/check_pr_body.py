@@ -5,6 +5,14 @@
 
     check_pr_body.py --template .github/PULL_REQUEST_TEMPLATE.md --event "$GITHUB_EVENT_PATH"
     check_pr_body.py --template .github/PULL_REQUEST_TEMPLATE.md --body-file body.md
+    check_pr_body.py ... --changed-files changed.txt
+
+With --changed-files (one path per line, as GitHub lists them for the pull
+request, including the old name of a renamed file) the boxes are required
+only when a path is under themes/: they are statements about a submitted
+theme, so a pull request that only changes the website, scripts or docs
+has nothing to confirm. The list must come from GitHub, never from the
+pull request's own files or description.
 
 The boxes are read from the template itself (from the base branch, so a
 pull request can't edit them away), which keeps the check and the template
@@ -42,7 +50,16 @@ def main():
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--event", type=Path, help="the GitHub event payload (GITHUB_EVENT_PATH)")
     source.add_argument("--body-file", type=Path, help="a file holding the PR body, for local runs")
+    parser.add_argument("--changed-files", type=Path,
+                        help="file listing the paths the pull request changes; boxes are required only if one is under themes/")
     args = parser.parse_args()
+
+    if args.changed_files:
+        changed = args.changed_files.read_text(encoding="utf-8").splitlines()
+        if not any(path.strip().startswith("themes/") for path in changed):
+            print("This pull request does not add, change or remove anything under themes/, "
+                  "so the theme confirmation boxes are not required.")
+            return 0
 
     required = boxes(args.template.read_text(encoding="utf-8"))
     if not required:
