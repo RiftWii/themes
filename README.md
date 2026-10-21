@@ -5,7 +5,8 @@ made by its players. It lives at
 [github.com/RiftWii/themes](https://github.com/RiftWii/themes), and GitHub
 Pages serves every theme as a zip under **https://riftwii.github.io/themes/**,
 plus one `themes.json` there that lists them all
-(https://riftwii.github.io/themes/themes.json). In future RiftWii could browse that
+(https://riftwii.github.io/themes/themes.json). People browse them at
+**https://riftwii.github.io/themes.html**, on the main RiftWii website. In future RiftWii could browse that
 list and install a theme straight to the SD card. Until then, download a
 zip, unpack it into `sd:/riftwii/themes/` and pick the theme under
 Settings > **Theme**.
@@ -125,11 +126,11 @@ It checks every theme again, then builds the site:
   SHA-256 only changes when the theme does.
 - `previews/<folder>.png`: the theme's `preview.png`, or else its
   `background.png`, if it has one.
-- `index.html` and `assets/`: the front page from `web/` and its background
-  pictures and font, copies of the main RiftWii website's
-  ([RiftWii/riftwii.github.io](https://github.com/RiftWii/riftwii.github.io),
-  see [web/assets/README.md](web/assets/README.md); the font is under the SIL
-  Open Font License, `OFL.txt` sits beside it).
+- `index.html`: from `web/`, a small page that sends visitors to the themes
+  page of the main RiftWii website, https://riftwii.github.io/themes.html.
+  That page lives in [RiftWii/riftwii.github.io](https://github.com/RiftWii/riftwii.github.io)
+  and reads `themes.json` from here; this repository publishes no pictures or
+  fonts of its own for it.
 - `themes.json`, then deploys it to GitHub Pages:
 
 ```json
