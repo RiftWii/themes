@@ -1,8 +1,10 @@
 <!--
 Thanks for sharing a theme! Fill this in and tick every box below by
-changing "[ ]" to "[x]". The "validate" check fails until all of them are
-ticked, and runs again when you edit this description.
-Read CONTENT-RULES.md first. Every box is required.
+changing "[ ]" to "[x]". For a pull request that touches themes/, the
+"validate" check fails until all of them are ticked, and runs again when you
+edit this description. (Pull requests that don't touch themes/, such as
+website or docs changes, can ignore the boxes.)
+Read CONTENT-RULES.md first. Every box is required for a theme.
 -->
 
 ## Theme

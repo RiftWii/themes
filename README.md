@@ -73,7 +73,9 @@ would ignore them, and every extra byte is downloaded to a Wii.
 [validate.yml](.github/workflows/validate.yml) runs on every pull request.
 It fails if:
 
-- a box in the pull request description is not ticked;
+- a box in the pull request description is not ticked (only when the pull
+  request adds, changes or removes something under `themes/`; website,
+  script and docs changes don't need the boxes);
 - a file name is not one of those above, starts with a dot, or could climb
   out of the folder (`..`, `/`, `\`, `:`), or the entry is a symlink or a
   subfolder;
