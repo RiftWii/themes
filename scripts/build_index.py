@@ -13,7 +13,8 @@ Run it only on themes that passed validate_theme.py (publish.yml does both).
 
 site/themes/<folder>.zip   the theme, its files under "<folder>/"
 site/previews/<folder>.png a preview picture, when the theme has one
-site/themes.json           the list RiftWii (in future) and people browse
+site/themes.json           the list RiftWii (in future) and the themes page browse
+site/index.html            a redirect to the themes page on the main website
 
 The zips are deterministic: entries sorted by name, a fixed 1980-01-01
 timestamp, fixed permissions and a fixed compression level, so the same
@@ -38,7 +39,6 @@ from validate_theme import PREVIEW_NAME, parse_ini_with_riftwii, read_license  #
 INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
 SITE_PAGE = Path(__file__).resolve().parent.parent / "web" / "index.html"
-SITE_ASSETS = Path(__file__).resolve().parent.parent / "web" / "assets"
 ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 
@@ -122,12 +122,9 @@ def main():
     (args.out / "themes.json").write_text(json.dumps(index, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"wrote {args.out / 'themes.json'} with {len(entries)} theme(s)")
 
-    # The front page for people who open the site in a browser. It reads
-    # themes.json itself, so the same page serves any number of themes.
+    # People who open the site in a browser are sent on to the themes page
+    # of the main RiftWii website (web/index.html is only that redirect).
     shutil.copyfile(SITE_PAGE, args.out / "index.html")
-    # Its background pictures and font, in web/assets/ (copied from the
-    # RiftWii website); the page loads them as assets/<name>.
-    shutil.copytree(SITE_ASSETS, args.out / "assets", dirs_exist_ok=True)
     return 0
 
 
