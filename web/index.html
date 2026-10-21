@@ -43,7 +43,7 @@ theme is added. Its look follows the main RiftWii website.
   --font: "Rounded", ui-rounded, "SF Pro Rounded", system-ui, sans-serif;
   --body-font: Arial, Helvetica, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --nav-room: 270px;
+  --nav-room: 380px;
 }
 
 * { box-sizing: border-box; }
@@ -112,25 +112,28 @@ a:focus-visible, button:focus-visible, input:focus-visible, summary:focus-visibl
 /* Navigation bar: glass panel on the left, with its toggle tab */
 .tbar {
   position: fixed; left: 22px; top: 50%; z-index: 1000;
-  width: 250px; padding: 24px 18px;
+  width: 320px; padding: 24px 18px;
   transform: translateY(-50%);
   border: 1px solid rgba(151, 115, 255, 0.26);
   border-radius: 22px;
   background: var(--glass);
   box-shadow: 0 0 32px rgba(61, 178, 255, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.07);
   -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
-  transition: transform 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.85s ease, transform 1.05s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* Like the main site, the bar starts out of sight and slides in once the
+   page has loaded (the script adds body.intro, then body.loaded). */
+body.intro:not(.loaded) .tbar { opacity: 0; transform: translate(-135%, -50%) scale(0.72); transform-origin: left center; }
 body.tbar-collapsed .tbar { transform: translate(calc(-100% - 22px), -50%); }
 .tbar-brand {
-  margin: 0 8px 22px; font-size: 1.2rem; letter-spacing: 0.18em; white-space: nowrap; color: var(--cyan);
+  margin: 0 8px 22px; font-size: 1.5rem; letter-spacing: 0.28em; white-space: nowrap; color: var(--cyan);
   text-shadow: 0 0 10px rgba(88, 221, 255, 0.35), 0 0 22px rgba(158, 80, 255, 0.2);
 }
 .tbar-links { display: flex; flex-direction: column; gap: 8px; }
 .tbar-links a {
-  position: relative; display: block; padding: 12px 18px;
+  position: relative; display: block; padding: 15px 18px;
   border: 1px solid transparent; border-radius: 13px;
-  color: #c9dbff; text-decoration: none; font-size: 1.05rem; letter-spacing: 0.06em;
+  color: #c9dbff; text-decoration: none; font-size: clamp(1rem, 2vw, 1.45rem); letter-spacing: 0.06em;
   transition: color 0.25s ease, border-color 0.25s ease, background 0.25s ease, transform 0.25s ease;
 }
 .tbar-links a::before {
@@ -163,24 +166,30 @@ body.tbar-collapsed .tbar { transform: translate(calc(-100% - 22px), -50%); }
 .tbar-arrow { display: block; font-family: Arial, sans-serif; font-size: 2rem; line-height: 1; transition: transform 0.35s ease; }
 body.tbar-collapsed .tbar-arrow { transform: rotate(180deg); }
 
-/* Page area: leaves room for the bar while it is open */
+/* Page area: padding of 60px, with room for the bar added on the left
+   while it is open (the main site's numbers). */
 .page-content {
   position: relative; z-index: 10; min-height: 100vh;
-  padding: 0 60px 0 var(--nav-room);
+  padding: 0 60px 90px;
   transition: padding-left 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
-body.tbar-collapsed .page-content { padding-left: 60px; }
+body.loaded:not(.tbar-collapsed) .page-content { padding-left: var(--nav-room); }
+@media (max-width: 1100px) {
+  :root { --nav-room: 330px; }
+  .tbar { width: 275px; }
+}
 .wrap { width: min(1050px, 100%); margin: 0 auto; }
 
 /* Hero */
-header.top { padding: 64px 0 18px; }
+header.top { padding: 64px 0 18px; text-align: center; }
 .kicker { display: inline-block; margin-bottom: 10px; color: var(--link); font-size: 1.25rem; letter-spacing: 0.28em; }
 h1 {
   font-size: clamp(2.1rem, 5vw, 3.4rem); line-height: 1.1; margin: 0 0 14px; font-weight: normal;
   color: #f6fbff; text-shadow: 0 0 18px rgba(88, 221, 255, 0.3), 0 0 36px rgba(158, 80, 255, 0.22);
 }
-.lede { font-family: var(--body-font); font-size: 1.1rem; line-height: 1.7; color: var(--text); max-width: 62ch; margin: 0 0 26px; }
+.lede { font-family: var(--body-font); font-size: 1.1rem; line-height: 1.7; color: var(--text); max-width: 62ch; margin: 0 auto 26px; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+header.top .actions { justify-content: center; }
 
 /* Buttons */
 .btn {
@@ -302,21 +311,39 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .tbar-links a { padding: 7px 16px; font-size: 0.95rem; }
 }
 
-/* Narrow screens: the bar sits sticky above the page, in the flow, so the
-   content starts below it however many rows its links wrap to. */
+/* Narrow screens, as on the main site: the bar sits sticky above the page,
+   in the flow, its links in a compact grid, with room under it for the
+   toggle tab that hangs below it. Collapsed, it leaves the flow (fixed,
+   slid up) so the content moves up. */
 @media (max-width: 900px) {
-  .tbar {
-    position: sticky; top: 8px; left: auto; width: auto; margin: 8px 16px 0; padding: 6px;
-    border-radius: 14px; transform: none; transition: none;
+  .tbar, body.intro:not(.loaded) .tbar, body.tbar-collapsed .tbar {
+    position: sticky; top: 8px; left: auto; width: auto; margin: 8px 8px 36px; padding: 6px;
+    border-radius: 12px; opacity: 1; transform: none; transition: none; z-index: 1000;
   }
-  body.tbar-collapsed .tbar { transform: none; }
-  .tbar-brand, .tbar-toggle { display: none; }
-  .tbar-links { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 4px; }
-  .tbar-links a { padding: 10px 12px; font-size: 0.95rem; }
+  body.tbar-collapsed .tbar {
+    position: fixed; left: 8px; right: 8px; top: 8px; margin: 0;
+    transform: translateY(calc(-100% - 70px)); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .tbar-brand { display: none; }
+  .tbar-toggle {
+    right: 8px; top: calc(100% + 26px); width: 62px; height: 43px;
+    border: 1px solid rgba(126, 210, 255, 0.28); border-top: 0; border-radius: 0 0 15px 15px;
+    box-shadow: none;
+  }
+  .tbar-arrow { transform: rotate(90deg); font-size: 1.6rem; }
+  body.tbar-collapsed .tbar-arrow { transform: rotate(-90deg); }
+  .tbar-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .tbar-links a {
+    display: flex; align-items: center; justify-content: center; min-height: 28px;
+    padding: 5px 4px; border-radius: 8px; font-size: 0.78rem; line-height: 1.1;
+    letter-spacing: 0.01em; text-align: center;
+  }
   .tbar-links a::before { display: none; }
   .tbar-links a:hover, .tbar-links a:focus-visible, .tbar-links a[aria-current="page"] { transform: none; }
-  .page-content, body.tbar-collapsed .page-content { padding: 0 16px; }
-  header.top { padding-top: 36px; }
+  .page-content, body.loaded:not(.tbar-collapsed) .page-content, body.loaded.tbar-collapsed .page-content,
+  body.intro:not(.loaded) .page-content { padding: 0 12px 60px; }
+  body.loaded.tbar-collapsed .page-content { padding-top: 52px; }
+  header.top { padding-top: 18px; }
 }
 @media (max-width: 560px) {
   .search { min-width: 0; width: 100%; }
@@ -332,6 +359,7 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
 </style>
 </head>
 <body>
+<script>document.body.classList.add("intro");</script>
 <div class="background" aria-hidden="true">
   <div class="haze-main"></div>
   <div class="mist haze-1"></div>
@@ -625,6 +653,14 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
     star.style.animationDelay = "-" + Math.random() * 6 + "s";
     box.appendChild(star);
   }
+})();
+
+// The navigation bar slides in a moment after the page opens, as on the
+// main site (which does it after its intro).
+(function () {
+  "use strict";
+  var delay = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700;
+  setTimeout(function () { document.body.classList.add("loaded"); }, delay);
 })();
 
 // The navigation bar's toggle tab.
