@@ -311,44 +311,93 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   .tbar-links a { padding: 7px 16px; font-size: 0.95rem; }
 }
 
-/* Narrow screens, as on the main site: the bar sits sticky above the page,
-   in the flow, its links in a compact grid, with room under it for the
-   toggle tab that hangs below it. Collapsed, it leaves the flow (fixed,
-   slid up) so the content moves up. */
+/* Phone and tablet (900px and below), as on the main site: a slim fixed
+   bar with the name and a Menu button; the links open as a full-width panel
+   under it, with a scrim behind. The bar slides away while reading down and
+   returns on the first scroll up (script below). The side bar's toggle tab
+   is not used here. */
+.tbar-menu-button, .nav-scrim { display: none; }
 @media (max-width: 900px) {
-  .tbar, body.intro:not(.loaded) .tbar, body.tbar-collapsed .tbar {
-    position: sticky; top: 8px; left: auto; width: auto; margin: 8px 8px 36px; padding: 6px;
-    border-radius: 12px; opacity: 1; transform: none; transition: none; z-index: 1000;
+  html { scroll-padding-top: 64px; }
+  body #tbar.tbar {
+    position: fixed; top: 0; left: 0; right: 0; width: auto; height: 52px; margin: 0;
+    padding: 0 8px 0 16px; display: flex; align-items: center; justify-content: space-between;
+    border-width: 0 0 1px 0; border-radius: 0; opacity: 1; transform: translateY(0);
+    overflow: visible; transition: transform 0.3s ease; z-index: 1000;
   }
-  body.tbar-collapsed .tbar {
-    position: fixed; left: 8px; right: 8px; top: 8px; margin: 0;
-    transform: translateY(calc(-100% - 70px)); transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  body.nav-hidden #tbar.tbar { transform: translateY(-100%); }
+  .tbar-toggle { display: none; }
+  .tbar-brand { margin: 0; font-size: 1.15rem; letter-spacing: 0.2em; }
+  .tbar-brand-extra { display: none; }
+  .tbar-menu-button {
+    display: inline-flex; align-items: center; gap: 10px; min-width: 44px; min-height: 44px; padding: 0 14px;
+    border: 1px solid rgba(126, 210, 255, 0.28); border-radius: 12px;
+    background: rgba(15, 15, 55, 0.7); color: #c6f4ff; font: inherit; font-size: 1rem; cursor: pointer;
   }
-  .tbar-brand { display: none; }
-  .tbar-toggle {
-    right: 8px; top: calc(100% + 26px); width: 62px; height: 43px;
-    border: 1px solid rgba(126, 210, 255, 0.28); border-top: 0; border-radius: 0 0 15px 15px;
-    box-shadow: none;
+  .tbar-menu-button:hover, .tbar-menu-button:focus-visible, body.nav-open .tbar-menu-button {
+    color: #fff; background: rgba(60, 90, 190, 0.45);
   }
-  .tbar-arrow { transform: rotate(90deg); font-size: 1.6rem; }
-  body.tbar-collapsed .tbar-arrow { transform: rotate(-90deg); }
-  .tbar-links { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+  .tbar-menu-button:focus-visible, .tbar-links a:focus-visible { outline: 2px solid #9feaff; outline-offset: 2px; }
+  /* Three bars that become a cross while the menu is open. */
+  .tbar-menu-icon, .tbar-menu-icon::before, .tbar-menu-icon::after {
+    display: block; width: 18px; height: 2px; border-radius: 1px; background: currentColor;
+    transition: transform 0.25s ease, background 0.25s ease;
+  }
+  .tbar-menu-icon { position: relative; }
+  .tbar-menu-icon::before, .tbar-menu-icon::after { content: ""; position: absolute; left: 0; }
+  .tbar-menu-icon::before { top: -6px; }
+  .tbar-menu-icon::after { top: 6px; }
+  body.nav-open .tbar-menu-icon { background: transparent; }
+  body.nav-open .tbar-menu-icon::before { transform: translateY(6px) rotate(45deg); }
+  body.nav-open .tbar-menu-icon::after { transform: translateY(-6px) rotate(-45deg); }
+  /* The panel: closed it is not drawn and cannot be tabbed into. */
+  .tbar-links {
+    position: absolute; top: 100%; left: 0; right: 0; gap: 4px; width: auto;
+    max-height: calc(100vh - 64px); max-height: calc(100dvh - 64px); overflow-y: auto;
+    padding: 8px 12px 14px; border-bottom: 1px solid rgba(151, 115, 255, 0.26);
+    background: #0d1040; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    visibility: hidden; opacity: 0; transform: translateY(-8px);
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0s linear 0.2s;
+  }
+  body.nav-open .tbar-links { visibility: visible; opacity: 1; transform: translateY(0); transition-delay: 0s; }
   .tbar-links a {
-    display: flex; align-items: center; justify-content: center; min-height: 28px;
-    padding: 5px 4px; border-radius: 8px; font-size: 0.78rem; line-height: 1.1;
-    letter-spacing: 0.01em; text-align: center;
+    display: flex; align-items: center; justify-content: flex-start; min-height: 48px; padding: 10px 16px;
+    font-size: 1.05rem; line-height: 1.2; letter-spacing: 0.04em; text-align: left; border-radius: 12px;
   }
   .tbar-links a::before { display: none; }
   .tbar-links a:hover, .tbar-links a:focus-visible, .tbar-links a[aria-current="page"] { transform: none; }
+  .nav-scrim {
+    display: block; position: fixed; inset: 0; z-index: 900; background: rgba(3, 4, 20, 0.55);
+    opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
+  }
+  body.nav-open .nav-scrim { opacity: 1; pointer-events: auto; }
+
+  /* Room for the fixed bar */
   .page-content, body.loaded:not(.tbar-collapsed) .page-content, body.loaded.tbar-collapsed .page-content,
-  body.intro:not(.loaded) .page-content { padding: 0 12px 60px; }
-  body.loaded.tbar-collapsed .page-content { padding-top: 52px; }
-  header.top { padding-top: 18px; }
+  body.intro:not(.loaded) .page-content { padding: 52px 12px 48px; }
+  section { padding: 12px 0; scroll-margin-top: 64px; }
+
+  /* Phone-sized text and spacing: 15px paragraphs, smaller headings */
+  header.top { padding: 22px 0 10px; }
+  .kicker { margin-bottom: 8px; font-size: 0.85rem; letter-spacing: 0.2em; }
+  h1 { font-size: clamp(1.7rem, 7vw, 2.2rem); margin-bottom: 10px; }
+  .lede { font-size: 0.94rem; line-height: 1.55; margin-bottom: 18px; }
+  h2 { font-size: 1.25rem; line-height: 1.25; margin-bottom: 10px; }
+  .section-intro { font-size: 0.94rem; line-height: 1.55; margin-bottom: 14px; }
+  .panel, .empty { padding: 18px; border-radius: 18px; }
+  .step p, .rule p { font-size: 0.92rem; line-height: 1.5; }
+  .steps { gap: 12px; }
+  .rules { margin-top: 16px; }
+  footer { padding: 16px 0 32px; }
 }
 @media (max-width: 560px) {
   .search { min-width: 0; width: 100%; }
   .slots { grid-template-columns: repeat(2, 1fr); }
-  .panel { padding: 22px 18px; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: reduce) {
+  body #tbar.tbar, .tbar-links, .tbar-menu-icon, .tbar-menu-icon::before, .tbar-menu-icon::after, .nav-scrim {
+    transition: none;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -371,16 +420,22 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   <button class="tbar-toggle" id="tbarToggle" type="button" aria-label="Hide navigation" aria-expanded="true">
     <span class="tbar-arrow" aria-hidden="true">&lsaquo;</span>
   </button>
-  <div class="tbar-brand">RIFTWII NAVI</div>
-  <nav class="tbar-links">
+  <div class="tbar-brand">RIFTWII<span class="tbar-brand-extra"> NAVI</span></div>
+  <button class="tbar-menu-button" id="navMenuButton" type="button" aria-label="Menu" aria-expanded="false" aria-controls="navPanel">
+    <span class="tbar-menu-icon" aria-hidden="true"></span>
+    <span class="tbar-menu-text">Menu</span>
+  </button>
+  <nav class="tbar-links" id="navPanel" aria-label="Sections">
     <a href="https://riftwii.github.io/#home">Home</a>
+    <a href="https://riftwii.github.io/#download">Download</a>
     <a href="https://riftwii.github.io/#features">Features</a>
     <a href="https://riftwii.github.io/#tutorials">Tutorials</a>
-    <a href="https://riftwii.github.io/#download">Download</a>
+    <a href="https://riftwii.github.io/#socials">Socials</a>
     <a href="https://riftwii.github.io/#credits">Credits</a>
     <a href="./" aria-current="page">Themes</a>
   </nav>
 </aside>
+<div class="nav-scrim" id="navScrim" aria-hidden="true"></div>
 
 <div class="page-content">
 <header class="top">
@@ -655,12 +710,22 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
   }
 })();
 
-// The navigation bar slides in a moment after the page opens, as on the
-// main site (which does it after its intro).
+// The navigation bar slides in after a short intro, as on the main site: 1.5
+// seconds, ended early by any click, tap, key press or scroll, and skipped
+// when the visitor asks for less motion.
 (function () {
   "use strict";
-  var delay = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 700;
-  setTimeout(function () { document.body.classList.add("loaded"); }, delay);
+  var reduced = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finished = false;
+  function finish() {
+    if (finished) return;
+    finished = true;
+    document.body.classList.add("loaded");
+  }
+  var timer = setTimeout(finish, reduced ? 0 : 1500);
+  ["pointerdown", "keydown", "wheel", "touchstart"].forEach(function (name) {
+    window.addEventListener(name, function () { clearTimeout(timer); finish(); }, { once: true, passive: true });
+  });
 })();
 
 // The navigation bar's toggle tab.
@@ -673,6 +738,61 @@ footer nav { display: flex; flex-wrap: wrap; gap: 8px 20px; }
     toggle.setAttribute("aria-expanded", String(!collapsed));
     toggle.setAttribute("aria-label", collapsed ? "Show navigation" : "Hide navigation");
   });
+})();
+
+// The phone and tablet menu (900px and below): the links sit in a panel under
+// a slim bar. It closes on a link, on a tap outside, on Escape (focus goes
+// back to the button) and when the window grows to the desktop layout. The
+// bar slides away while reading down and returns on the first scroll up,
+// except near the top, while the menu or the bar has focus, and with
+// reduced motion.
+(function () {
+  "use strict";
+  var button = document.getElementById("navMenuButton");
+  var bar = document.getElementById("tbar");
+  if (!button || !bar) return;
+  var compact = window.matchMedia("(max-width: 900px)");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  var lastY = window.scrollY;
+
+  function isOpen() { return document.body.classList.contains("nav-open"); }
+
+  function setOpen(open, returnFocus) {
+    document.body.classList.toggle("nav-open", open);
+    button.setAttribute("aria-expanded", String(open));
+    if (open) document.body.classList.remove("nav-hidden");
+    else if (returnFocus) button.focus();
+  }
+
+  button.addEventListener("click", function () { setOpen(!isOpen(), false); });
+  bar.querySelectorAll(".tbar-links a").forEach(function (link) {
+    link.addEventListener("click", function () { setOpen(false, false); });
+  });
+  document.addEventListener("click", function (event) {
+    if (isOpen() && !bar.contains(event.target)) setOpen(false, false);
+  });
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape" && isOpen()) setOpen(false, true);
+  });
+  compact.addEventListener("change", function (event) {
+    if (!event.matches) {
+      setOpen(false, false);
+      document.body.classList.remove("nav-hidden");
+    }
+  });
+
+  window.addEventListener("scroll", function () {
+    var y = window.scrollY;
+    var delta = y - lastY;
+    if (!compact.matches || reduced.matches || isOpen() || bar.contains(document.activeElement) || y < 80) {
+      document.body.classList.remove("nav-hidden");
+    } else if (delta > 6) {
+      document.body.classList.add("nav-hidden");
+    } else if (delta < -6) {
+      document.body.classList.remove("nav-hidden");
+    }
+    if (Math.abs(delta) > 6) lastY = y;
+  }, { passive: true });
 })();
 </script>
 </body>
