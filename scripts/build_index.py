@@ -38,6 +38,7 @@ from validate_theme import PREVIEW_NAME, parse_ini_with_riftwii, read_license  #
 INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
 SITE_PAGE = Path(__file__).resolve().parent.parent / "web" / "index.html"
+SITE_ASSETS = Path(__file__).resolve().parent.parent / "web" / "assets"
 ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 
@@ -124,6 +125,9 @@ def main():
     # The front page for people who open the site in a browser. It reads
     # themes.json itself, so the same page serves any number of themes.
     shutil.copyfile(SITE_PAGE, args.out / "index.html")
+    # Its background pictures and font, in web/assets/ (copied from the
+    # RiftWii website); the page loads them as assets/<name>.
+    shutil.copytree(SITE_ASSETS, args.out / "assets", dirs_exist_ok=True)
     return 0
 
 
