@@ -125,6 +125,11 @@ It checks every theme again, then builds the site:
   SHA-256 only changes when the theme does.
 - `previews/<folder>.png`: the theme's `preview.png`, or else its
   `background.png`, if it has one.
+- `index.html` and `assets/`: the front page from `web/` and its background
+  pictures and font, copies of the main RiftWii website's
+  ([RiftWii/riftwii.github.io](https://github.com/RiftWii/riftwii.github.io),
+  see [web/assets/README.md](web/assets/README.md); the font is under the SIL
+  Open Font License, `OFL.txt` sits beside it).
 - `themes.json`, then deploys it to GitHub Pages:
 
 ```json
