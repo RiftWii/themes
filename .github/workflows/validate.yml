@@ -87,9 +87,15 @@ jobs:
 
       # The scripts' own tests, from the base branch like the scripts.
       # With Pillow (pinned, as publish.yml installs it) so the mock-preview
-      # tests run too; they skip themselves when it is missing.
+      # tests run too; they skip themselves when it is missing. A pull request
+      # that adds the tests or the requirements file has neither on the base
+      # branch yet, so the step says so and skips until that change is merged.
       - name: Script tests
         run: |
+          if [ ! -d trusted/tests ] || [ ! -f trusted/scripts/requirements-preview.txt ]; then
+            echo "::notice::The script tests are not on the base branch yet; they run once this change is merged."
+            exit 0
+          fi
           python3 -m venv "$RUNNER_TEMP/preview-venv"
           "$RUNNER_TEMP/preview-venv/bin/pip" install --no-cache-dir --requirement trusted/scripts/requirements-preview.txt
           "$RUNNER_TEMP/preview-venv/bin/python" -I -m unittest discover -s trusted/tests
