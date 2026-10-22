@@ -58,8 +58,13 @@ MAX_MUSIC_SECONDS = 6 * 60
 MAX_THEME_BYTES = 10 * 1024 * 1024
 MAX_LICENSE_BYTES = 64 * 1024
 # preview.png is a screenshot for the website only: it is left out of the
-# zip, so it never reaches a Wii, but it still counts towards the theme's
-# size in the repository. A menu screenshot is 640x480.
+# zip, so it never reaches a Wii. It still counts towards the theme's
+# MAX_THEME_BYTES, because the limit is also about what a repository and the
+# Pages site hold per theme, and a theme that is only a preview away from
+# the limit is not one a reviewer wants to grow. 1 MiB is generous for a
+# 640x480 screenshot (a typical one is 100-400 KiB) and bounds what the
+# website and RiftWii's theme browser, which scales it to 160x120, download.
+# A menu screenshot is 640x480.
 PREVIEW_NAME = "preview.png"
 PREVIEW_SIZE = (640, 480)
 MAX_PREVIEW_BYTES = 1024 * 1024
@@ -182,6 +187,60 @@ def read_png(data):
     if width is None or not seen_iend:
         raise ValueError("PNG is cut short (no IEND)")
     return width, height, " ".join(texts)
+
+
+# Colour types and bit depths the PNG format allows (PNG spec, table 11.1);
+# RiftWii's decoder (src/art/pngdecode.cpp, ValidDepth) accepts the same.
+PNG_DEPTHS = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8), 4: (8, 16), 6: (8, 16)}
+PNG_CHANNELS = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
+
+
+def decode_png_pixels(data):
+    """Inflates a PNG's pixel data, to prove the picture decodes at all and
+    stays small. Raises ValueError when the header is one RiftWii's decoder
+    refuses, the zlib stream is broken or cut short, or the pixels come to
+    more than the picture's size allows (a decompression bomb: a few bytes
+    of zlib can claim gigabytes). The caller has already run read_png().
+
+    It does not unfilter the rows or build the image: the size and a clean
+    zlib stream are what an attacker could abuse, and this stays standard
+    library only."""
+    width, height, depth, colour_type, interlace = struct.unpack(">IIBBxxB", data[16:29])
+    if depth not in PNG_DEPTHS.get(colour_type, ()):
+        raise ValueError(f"colour type {colour_type} with {depth} bits per sample is not a valid PNG")
+    if interlace > 1:
+        raise ValueError("unknown PNG interlace method")
+    # The most the pixels can take: every row one filter byte plus its
+    # samples. Adam7 interlacing adds a little per pass (up to seven passes
+    # with their own filter bytes), so allow one more row's worth per pass.
+    bits_per_pixel = PNG_CHANNELS[colour_type] * depth
+    row_bytes = 1 + (width * bits_per_pixel + 7) // 8
+    limit = height * row_bytes + (7 * row_bytes if interlace else 0)
+
+    compressed = bytearray()
+    pos = 8
+    while pos + 12 <= len(data):
+        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
+        if kind == b"IDAT":
+            compressed += data[pos + 8:pos + 8 + length]
+        pos += 12 + length
+        if kind == b"IEND":
+            break
+    if not compressed:
+        raise ValueError("PNG has no picture data")
+
+    inflater = zlib.decompressobj()
+    try:
+        # One byte over the limit tells "exactly full" from "too much".
+        pixels = inflater.decompress(bytes(compressed), limit + 1)
+    except zlib.error as problem:
+        raise ValueError(f"picture data is damaged ({problem})")
+    if len(pixels) > limit or inflater.unconsumed_tail:
+        raise ValueError(f"picture data inflates to more than the {limit} bytes a {width}x{height} PNG can hold")
+    if not inflater.eof:
+        raise ValueError("picture data is cut short")
+    if not interlace and len(pixels) != height * row_bytes:
+        raise ValueError(f"picture data is {len(pixels)} bytes; a {width}x{height} PNG needs {height * row_bytes}")
 
 
 def read_ogg_vorbis(data):
@@ -385,10 +444,18 @@ def check_png(name, data, size, expected, where, report):
         report.error(where, str(problem))
         return
     if (width, height) != expected and name == PREVIEW_NAME:
-        report.error(where, f"is {width}x{height}; a preview is a {expected[0]}x{expected[1]} menu screenshot")
+        report.error(where, f"is {width}x{height}; a preview is a {expected[0]}x{expected[1]} menu screenshot "
+                            "(RiftWii's theme browser shows it at 4:3, scaled down to 160x120)")
     elif (width, height) != expected:
         report.error(where, f"is {width}x{height}; RiftWii needs exactly {expected[0]}x{expected[1]} "
                             f"for {name} (a picture of any other size is skipped)")
+    if name == PREVIEW_NAME and (width, height) == expected:
+        # The site and RiftWii's theme browser both decode this picture, and
+        # nobody else has looked inside it, so prove it inflates in bounds.
+        try:
+            decode_png_pixels(data)
+        except ValueError as problem:
+            report.error(where, str(problem))
     if SUSPICIOUS_WORDS.search(text):
         report.warning(where, f"PNG text mentions {SUSPICIOUS_WORDS.search(text).group(0)!r}; check where it came from")
 

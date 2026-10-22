@@ -85,6 +85,10 @@ jobs:
           --event "$GITHUB_EVENT_PATH"
           --changed-files "$RUNNER_TEMP/changed-files.txt"
 
+      # The scripts' own tests, from the base branch like the scripts.
+      - name: Script tests
+        run: python3 -I -m unittest discover -s trusted/tests
+
       - name: Theme folders
         run: >
           python3 -I trusted/scripts/validate_theme.py
