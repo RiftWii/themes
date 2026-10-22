@@ -57,17 +57,12 @@ MAX_MUSIC_SECONDS = 6 * 60
 # hundred themes under GitHub Pages' 1 GB site limit.
 MAX_THEME_BYTES = 10 * 1024 * 1024
 MAX_LICENSE_BYTES = 64 * 1024
-# preview.png is a screenshot for the website only: it is left out of the
-# zip, so it never reaches a Wii. It still counts towards the theme's
-# MAX_THEME_BYTES, because the limit is also about what a repository and the
-# Pages site hold per theme, and a theme that is only a preview away from
-# the limit is not one a reviewer wants to grow. 1 MiB is generous for a
-# 640x480 screenshot (a typical one is 100-400 KiB) and bounds what the
-# website and RiftWii's theme browser, which scales it to 160x120, download.
-# A menu screenshot is 640x480.
+# Every theme's preview is drawn for it (scripts/mock_preview.py), so all
+# themes look alike and can be compared. A submitted preview.png would only
+# be ignored, so it is rejected instead of being left to mislead.
 PREVIEW_NAME = "preview.png"
-PREVIEW_SIZE = (640, 480)
-MAX_PREVIEW_BYTES = 1024 * 1024
+PREVIEW_REJECTED = ("preview.png is no longer used: every theme gets a drawn preview of "
+                    "RiftWii's Home. Remove it from the folder.")
 
 # Folder names become zip names, URLs and folders on a FAT32 SD card.
 # RiftWii's own update pack also allows spaces (theme_pack_name_ok in
@@ -75,7 +70,7 @@ MAX_PREVIEW_BYTES = 1024 * 1024
 FOLDER_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_-]{0,31}$")
 
 FIXED_FILES = {"theme.ini", "LICENSE"}
-OPTIONAL_FILES = {"music.ogg", "hover.wav", "click.wav", "home_open.wav", "home_close.wav", PREVIEW_NAME}
+OPTIONAL_FILES = {"music.ogg", "hover.wav", "click.wav", "home_open.wav", "home_close.wav"}
 REQUIRED_FILES = {"theme.ini", "LICENSE"}
 
 # SPDX identifiers. Anything else needs the maintainers' approval, recorded
@@ -187,60 +182,6 @@ def read_png(data):
     if width is None or not seen_iend:
         raise ValueError("PNG is cut short (no IEND)")
     return width, height, " ".join(texts)
-
-
-# Colour types and bit depths the PNG format allows (PNG spec, table 11.1);
-# RiftWii's decoder (src/art/pngdecode.cpp, ValidDepth) accepts the same.
-PNG_DEPTHS = {0: (1, 2, 4, 8, 16), 2: (8, 16), 3: (1, 2, 4, 8), 4: (8, 16), 6: (8, 16)}
-PNG_CHANNELS = {0: 1, 2: 3, 3: 1, 4: 2, 6: 4}
-
-
-def decode_png_pixels(data):
-    """Inflates a PNG's pixel data, to prove the picture decodes at all and
-    stays small. Raises ValueError when the header is one RiftWii's decoder
-    refuses, the zlib stream is broken or cut short, or the pixels come to
-    more than the picture's size allows (a decompression bomb: a few bytes
-    of zlib can claim gigabytes). The caller has already run read_png().
-
-    It does not unfilter the rows or build the image: the size and a clean
-    zlib stream are what an attacker could abuse, and this stays standard
-    library only."""
-    width, height, depth, colour_type, interlace = struct.unpack(">IIBBxxB", data[16:29])
-    if depth not in PNG_DEPTHS.get(colour_type, ()):
-        raise ValueError(f"colour type {colour_type} with {depth} bits per sample is not a valid PNG")
-    if interlace > 1:
-        raise ValueError("unknown PNG interlace method")
-    # The most the pixels can take: every row one filter byte plus its
-    # samples. Adam7 interlacing adds a little per pass (up to seven passes
-    # with their own filter bytes), so allow one more row's worth per pass.
-    bits_per_pixel = PNG_CHANNELS[colour_type] * depth
-    row_bytes = 1 + (width * bits_per_pixel + 7) // 8
-    limit = height * row_bytes + (7 * row_bytes if interlace else 0)
-
-    compressed = bytearray()
-    pos = 8
-    while pos + 12 <= len(data):
-        length, kind = struct.unpack(">I4s", data[pos:pos + 8])
-        if kind == b"IDAT":
-            compressed += data[pos + 8:pos + 8 + length]
-        pos += 12 + length
-        if kind == b"IEND":
-            break
-    if not compressed:
-        raise ValueError("PNG has no picture data")
-
-    inflater = zlib.decompressobj()
-    try:
-        # One byte over the limit tells "exactly full" from "too much".
-        pixels = inflater.decompress(bytes(compressed), limit + 1)
-    except zlib.error as problem:
-        raise ValueError(f"picture data is damaged ({problem})")
-    if len(pixels) > limit or inflater.unconsumed_tail:
-        raise ValueError(f"picture data inflates to more than the {limit} bytes a {width}x{height} PNG can hold")
-    if not inflater.eof:
-        raise ValueError("picture data is cut short")
-    if not interlace and len(pixels) != height * row_bytes:
-        raise ValueError(f"picture data is {len(pixels)} bytes; a {width}x{height} PNG needs {height * row_bytes}")
 
 
 def read_ogg_vorbis(data):
@@ -389,9 +330,11 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
     files = walk_theme(theme_dir, where, report)
     allowed = FIXED_FILES | OPTIONAL_FILES | set(image_sizes)
 
-    for name in sorted(set(files) - allowed):
+    if PREVIEW_NAME in files:
+        report.error(f"{where}/{PREVIEW_NAME}", PREVIEW_REJECTED)
+    for name in sorted(set(files) - allowed - {PREVIEW_NAME}):
         report.error(f"{where}/{name}", "not a file RiftWii uses; allowed are theme.ini, LICENSE, "
-                                         "music.ogg, the four sound WAVs, preview.png and the pictures in docs/THEMES.md")
+                                         "music.ogg, the four sound WAVs and the pictures in docs/THEMES.md")
     for name in sorted(REQUIRED_FILES - set(files)):
         report.error(where, f"{name} is missing")
 
@@ -410,12 +353,7 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
         if digest in flagged:
             report.warning(file_where, f"matches a flagged file ({flagged[digest]}); a maintainer must check it")
 
-        if name == PREVIEW_NAME:
-            if size > MAX_PREVIEW_BYTES:
-                report.error(file_where, f"{size} bytes; a preview may be at most {MAX_PREVIEW_BYTES} bytes")
-            else:
-                check_png(name, data, size, PREVIEW_SIZE, file_where, report)
-        elif name in image_sizes:
+        if name in image_sizes:
             check_png(name, data, size, image_sizes[name], file_where, report)
         elif name == "music.ogg":
             check_music(data, size, file_where, report)
@@ -443,19 +381,9 @@ def check_png(name, data, size, expected, where, report):
     except ValueError as problem:
         report.error(where, str(problem))
         return
-    if (width, height) != expected and name == PREVIEW_NAME:
-        report.error(where, f"is {width}x{height}; a preview is a {expected[0]}x{expected[1]} menu screenshot "
-                            "(RiftWii's theme browser shows it at 4:3, scaled down to 160x120)")
-    elif (width, height) != expected:
+    if (width, height) != expected:
         report.error(where, f"is {width}x{height}; RiftWii needs exactly {expected[0]}x{expected[1]} "
                             f"for {name} (a picture of any other size is skipped)")
-    if name == PREVIEW_NAME and (width, height) == expected:
-        # The site and RiftWii's theme browser both decode this picture, and
-        # nobody else has looked inside it, so prove it inflates in bounds.
-        try:
-            decode_png_pixels(data)
-        except ValueError as problem:
-            report.error(where, str(problem))
     if SUSPICIOUS_WORDS.search(text):
         report.warning(where, f"PNG text mentions {SUSPICIOUS_WORDS.search(text).group(0)!r}; check where it came from")
 

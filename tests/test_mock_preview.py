@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 RiftWii contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Tests for the mock preview: scripts/mock_preview.py and the order
-build_index.py tries previews in (preview.png, the mock, the background).
+build_index.py tries previews in (the mock, else the background).
 
     python3 -I -m unittest discover -s tests
 
@@ -123,12 +123,14 @@ class PreviewOrder(unittest.TestCase):
             preview = site / "previews" / "Test.png"
             return entry, preview.read_bytes() if preview.is_file() else None
 
-    def test_preview_png_wins_over_the_mock(self):
+    def test_a_stray_preview_png_is_never_used(self):
+        # validate_theme.py rejects it; if one got here anyway, the mock wins.
         screenshot = make_png(640, 480, colour=(1, 2, 3))
         _, preview = self.publish({"preview.png": screenshot, "background.png": make_png(640, 480)}, True)
-        self.assertEqual(preview, screenshot)
+        self.assertNotEqual(preview, screenshot)
+        self.assertEqual(Image.open(io.BytesIO(preview)).size, (640, 480))
 
-    def test_mock_is_drawn_without_a_preview_png(self):
+    def test_mock_is_drawn_for_every_theme(self):
         background = make_png(640, 480, colour=(9, 9, 9))
         entry, preview = self.publish({"background.png": background}, True)
         self.assertNotEqual(preview, background)

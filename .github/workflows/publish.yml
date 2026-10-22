@@ -82,9 +82,9 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/preview-venv"
           "$RUNNER_TEMP/preview-venv/bin/pip" install --no-cache-dir --requirement scripts/requirements-preview.txt
 
-      # A theme's preview is its preview.png, else a mock of RiftWii's Home
-      # drawn with the theme's pictures and colors (scripts/mock_preview.py),
-      # else its background.png (build_index.py).
+      # A theme's preview is a mock of RiftWii's Home drawn with the theme's
+      # pictures and colors (scripts/mock_preview.py), else its background.png
+      # if drawing fails (build_index.py).
       - name: Build zips and themes.json
         run: >
           "$RUNNER_TEMP/preview-venv/bin/python" -I scripts/build_index.py

@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2026 RiftWii contributors
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Tests for the optional preview.png: what validate_theme.py accepts and
-what build_index.py publishes.
+"""Tests for previews: validate_theme.py rejects a preview.png, and
+build_index.py publishes a preview for every theme.
 
     python3 -I -m unittest discover -s tests
 """
@@ -14,7 +14,7 @@ import zipfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from png_helpers import make_png, make_png_bomb, temp_dir, write_stub_theme_check, write_theme
+from png_helpers import make_png, temp_dir, write_stub_theme_check, write_theme
 
 import build_index
 import validate_theme
@@ -35,46 +35,22 @@ def validate(files):
 
 
 class PreviewValidation(unittest.TestCase):
-    def test_good_preview_passes(self):
-        errors, warnings, output = validate({"preview.png": make_png(640, 480)})
-        self.assertEqual((errors, warnings), (0, 0), output)
-
-    def test_theme_without_preview_passes(self):
-        errors, _, output = validate({})
-        self.assertEqual(errors, 0, output)
-
-    def test_wrong_size_fails_and_says_why(self):
-        errors, _, output = validate({"preview.png": make_png(320, 240)})
+    def test_preview_png_is_rejected_with_a_clear_message(self):
+        errors, _, output = validate({"preview.png": make_png(640, 480)})
         self.assertEqual(errors, 1, output)
-        self.assertIn("is 320x240; a preview is a 640x480 menu screenshot", output)
+        self.assertIn("preview.png is no longer used: every theme gets a drawn preview of "
+                      "RiftWii's Home. Remove it from the folder.", output)
 
-    def test_not_a_png_fails(self):
+    def test_any_preview_png_is_rejected_without_being_read(self):
+        # Not a PNG at all: still one clear message, not a PNG complaint.
         errors, _, output = validate({"preview.png": b"GIF89a" + bytes(100)})
         self.assertEqual(errors, 1, output)
-        self.assertIn("not a PNG file", output)
+        self.assertIn("no longer used", output)
+        self.assertNotIn("not a PNG", output)
 
-    def test_oversize_fails(self):
-        # A valid 640x480 picture padded with a text chunk to just over 1 MiB.
-        big = make_png(640, 480, padding=validate_theme.MAX_PREVIEW_BYTES)
-        self.assertGreater(len(big), validate_theme.MAX_PREVIEW_BYTES)
-        errors, _, output = validate({"preview.png": big})
-        self.assertEqual(errors, 1, output)
-        self.assertIn("a preview may be at most", output)
-
-    def test_decompression_bomb_fails(self):
-        bomb = make_png_bomb()
-        self.assertLess(len(bomb), validate_theme.MAX_PREVIEW_BYTES)
-        errors, _, output = validate({"preview.png": bomb})
-        self.assertEqual(errors, 1, output)
-        self.assertIn("inflates to more than", output)
-
-    def test_truncated_picture_data_fails(self):
-        png = make_png(640, 480)
-        # Keep the header, then the end chunk: no picture data at all.
-        header_end = 8 + 12 + 13
-        errors, _, output = validate({"preview.png": png[:header_end] + png[-12:]})
-        self.assertEqual(errors, 1, output)
-        self.assertIn("no picture data", output)
+    def test_theme_without_preview_passes(self):
+        errors, warnings, output = validate({})
+        self.assertEqual((errors, warnings), (0, 0), output)
 
 
 class PreviewPublishing(unittest.TestCase):
@@ -101,12 +77,9 @@ class PreviewPublishing(unittest.TestCase):
                 unpacked = sum(info.file_size for info in archive.infolist())
             return entry, preview, names, unpacked
 
-    def test_preview_png_is_used_and_left_out_of_the_zip(self):
-        screenshot = make_png(640, 480, colour=(1, 2, 3))
-        entry, preview, names, unpacked = self.build(
-            {"preview.png": screenshot, "background.png": make_png(640, 480, colour=(9, 9, 9))})
-        self.assertEqual(preview, screenshot)
-        self.assertNotIn("Test/preview.png", names)
+    def test_preview_url_stays_the_same_and_zip_counts_match(self):
+        entry, preview, names, unpacked = self.build({"background.png": make_png(640, 480, colour=(9, 9, 9))})
+        self.assertIsNotNone(preview)
         self.assertIn("Test/background.png", names)
         self.assertEqual(entry["preview"], "https://example.test/previews/Test.png")
         # What the Wii's installer compares the zip with.
