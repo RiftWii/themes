@@ -57,9 +57,47 @@ esac
 """
 
 
-def write_stub_theme_check(directory):
+# The same, but also printing the settings the mock preview reads, like the
+# real theme_check does: RiftWii's defaults (src/art/theme.cpp,
+# ThemeColors) overlaid with the [colors] and [shape] keys the theme.ini
+# sets. Only what the mock needs; the real one prints every colour key.
+STUB_THEME_CHECK_WITH_LOOK = r"""#!/usr/bin/env python3
+import sys
+DEFAULTS = {
+    "ink": "#2E2E36", "ink_soft": "#4A4A54", "ink_dim": "#6A6A74", "clock": "#74747E",
+    "accent": "#2FB6E9", "glyph": "#55555F", "card": "#FFFFFF", "card_edge": "#CFCFD6",
+    "card_edge_strong": "#C4C4CE", "shadow": "#28283C22", "glow": "#2FB6E950", "badge": "#ECECF1",
+    "bar": "#DEDEE4", "backdrop": "#ECECEF", "backdrop_stripe": "#E3E3E8",
+}
+if sys.argv[1] == "images":
+    print("background 640 480\ntile 140 100\ntile_empty 140 100\nbar 640 124")
+    raise SystemExit
+colors = dict(DEFAULTS)
+shape = {"corners": "1", "stripes": "yes", "gloss": "no", "bar": "dip"}
+section = ""
+for line in open(sys.argv[2], encoding="utf-8"):
+    line = line.strip()
+    if line.startswith("["):
+        section = line.strip("[]")
+    elif "=" in line and not line.startswith("#"):
+        key, value = (part.strip() for part in line.split("=", 1))
+        if section == "colors":
+            colors[key] = value
+        elif section in ("shape", "backdrop"):
+            shape[key] = value
+print("name\tTest theme\nauthor\tTester")
+print("corners\t" + shape["corners"])
+print("stripes\t" + ("1" if shape["stripes"] == "yes" else "0"))
+print("gloss\t" + ("1" if shape["gloss"] == "yes" else "0"))
+print("bar\t" + shape["bar"])
+for key, value in colors.items():
+    print("color\t" + key + "\t" + value)
+"""
+
+
+def write_stub_theme_check(directory, with_look=False):
     path = Path(directory) / "theme_check"
-    path.write_text(STUB_THEME_CHECK, encoding="utf-8")
+    path.write_text(STUB_THEME_CHECK_WITH_LOOK if with_look else STUB_THEME_CHECK, encoding="utf-8")
     path.chmod(0o755)
     return str(path)
 

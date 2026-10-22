@@ -86,8 +86,13 @@ jobs:
           --changed-files "$RUNNER_TEMP/changed-files.txt"
 
       # The scripts' own tests, from the base branch like the scripts.
+      # With Pillow (pinned, as publish.yml installs it) so the mock-preview
+      # tests run too; they skip themselves when it is missing.
       - name: Script tests
-        run: python3 -I -m unittest discover -s trusted/tests
+        run: |
+          python3 -m venv "$RUNNER_TEMP/preview-venv"
+          "$RUNNER_TEMP/preview-venv/bin/pip" install --no-cache-dir --requirement trusted/scripts/requirements-preview.txt
+          "$RUNNER_TEMP/preview-venv/bin/python" -I -m unittest discover -s trusted/tests
 
       - name: Theme folders
         run: >

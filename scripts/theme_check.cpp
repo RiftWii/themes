@@ -9,7 +9,11 @@
 //                              "<name> <width> <height>"
 //   theme_check ini <path>     parses theme.ini and prints
 //                              "name\t<name>", "author\t<author>" and one
-//                              "note\t<text>" per line RiftWii would skip
+//                              "note\t<text>" per line RiftWii would skip,
+//                              then the settings RiftWii ended up with, for
+//                              scripts/mock_preview.py: "corners\t<number>",
+//                              "stripes\t0|1", "gloss\t0|1", "bar\tdip|bump"
+//                              and one "color\t<key>\t#RRGGBBAA" per colour
 //
 // It always exits 0 after a successful read: RiftWii never refuses a
 // theme.ini, it only skips lines, so deciding that a note is a failure is
@@ -68,6 +72,16 @@ int print_ini(const char* path) {
     std::cout << "author\t" << escape_field(theme.author) << '\n';
     for (const std::string& note : notes) {
         std::cout << "note\t" << escape_field(note) << '\n';
+    }
+
+    // The settings after RiftWii's own parsing, with its defaults filled
+    // in, so the mock preview draws from the values the Wii would use.
+    std::cout << "corners\t" << theme.corners << '\n';
+    std::cout << "stripes\t" << (theme.stripes ? 1 : 0) << '\n';
+    std::cout << "gloss\t" << (theme.gloss ? 1 : 0) << '\n';
+    std::cout << "bar\t" << (theme.bar_bump ? "bump" : "dip") << '\n';
+    for (const riftwii::ThemeColorKey& entry : riftwii::theme_color_keys()) {
+        std::cout << "color\t" << entry.key << '\t' << riftwii::format_theme_color(theme.colors.*(entry.field)) << '\n';
     }
     return 0;
 }

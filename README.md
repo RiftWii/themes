@@ -65,8 +65,8 @@ Plus one file for the website only:
   (from a Wii, or Dolphin's screenshot key). The site and RiftWii's own
   theme browser show it; the browser scales it to 160x120, so keep the
   picture 4:3 and readable at that size. It is left out of the zip, so it
-  never reaches a Wii. Without one, the site shows your `background.png`,
-  if you have one, which says little about a theme made of colors. It must
+  never reaches a Wii. Without one, publishing draws a mock of Home with
+  your theme (see Publishing), which is close but not a screenshot. It must
   show the theme itself, with no game covers, banners or real game names
   (CONTENT-RULES.md): an empty card or homebrew gives a clean Home.
 
@@ -135,10 +135,29 @@ It checks every theme again, then builds the site:
 - `themes/<folder>.zip`: the theme's files under `<folder>/`. The zips are
   deterministic (sorted entries, fixed dates and permissions), so a theme's
   SHA-256 only changes when the theme does.
-- `previews/<folder>.png`: the theme's `preview.png`, or else its
-  `background.png`, if it has one. `preview.png` is not in the zip, so the
-  zip's `files` and `unpacked_size` in `themes.json` count exactly what the
-  Wii unpacks and checks.
+- `previews/<folder>.png`, 640x480, from the first of these that works:
+  1. the theme's own `preview.png`;
+  2. a mock of RiftWii's Home drawn with the theme
+     ([scripts/mock_preview.py](scripts/mock_preview.py), Pillow): the
+     background, a grid of placeholder tiles (one lit) using the theme's tile
+     pictures or else its colors, corners and gloss, and the bottom bar with
+     a clock, the round buttons and a page label;
+  3. its `background.png`, if it has one (when drawing fails, e.g. no
+     Pillow; the publish log says so).
+
+  The mock's layout numbers are copied from RiftWii's `wii/menu/` code in one
+  commented block at the top of `mock_preview.py`, to update when Home
+  changes. Its colors and shape come from `theme_check`, so they are
+  RiftWii's own parse of `theme.ini`, defaults included. Pillow is pinned in
+  [scripts/requirements-preview.txt](scripts/requirements-preview.txt); the
+  text is Pillow's bundled font (Aileron, CC0), so no font file is committed
+  and no Nintendo font is used. Theme pictures are untrusted: only PNGs of
+  the exact size RiftWii needs are opened, under a 2-million-pixel limit.
+  The size is always 640x480, the same as a screenshot, so the themes page
+  and RiftWii's theme browser need no change.
+
+  `preview.png` is not in the zip, so the zip's `files` and `unpacked_size`
+  in `themes.json` count exactly what the Wii unpacks and checks.
 - `index.html`: from `web/`, a small page that sends visitors to the themes
   page of the main RiftWii website, https://riftwii.github.io/themes.html.
   That page lives in [RiftWii/riftwii.github.io](https://github.com/RiftWii/riftwii.github.io)
@@ -246,8 +265,11 @@ Settled for now, with the reason, so they can be revisited:
   parser for a format Audacity can convert away in one step.
 - **Previews.** An optional `preview.png` screenshot from the submitter,
   falling back to `background.png`. It counts toward the theme's size limit
-  but stays out of the zip. Rendering previews in publish.yml would
-  need a whole-screen mode in RiftWii's theme kit; worth adding later, but
-  not needed to start.
+  but stays out of the zip. Without one, publish.yml draws a mock of Home
+  with Pillow instead of showing the bare background, which said nothing
+  about a theme made of colors. It is drawn here, from the theme's files,
+  rather than by RiftWii's theme kit (which paints single pictures, not
+  whole screens), so no RiftWii build is needed; the price is a layout copy
+  to keep in step with Home.
 - **Folder names.** Letters, digits, `_` and `-`, no spaces, so URLs need no
   escaping. RiftWii itself would accept spaces.

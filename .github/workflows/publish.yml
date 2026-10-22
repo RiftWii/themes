@@ -73,18 +73,24 @@ jobs:
             echo "::warning::site-url.txt says $expected but Pages serves this repository at $PAGES_URL"
           fi
 
+      # Pillow, pinned, in a virtual environment of its own (the runner's
+      # Python refuses system-wide pip installs). It only draws the mock
+      # previews; if this step failed the build would still publish, using
+      # backgrounds (build_index.py warns).
+      - name: Install Pillow for the mock previews
+        run: |
+          python3 -m venv "$RUNNER_TEMP/preview-venv"
+          "$RUNNER_TEMP/preview-venv/bin/pip" install --no-cache-dir --requirement scripts/requirements-preview.txt
+
+      # A theme's preview is its preview.png, else a mock of RiftWii's Home
+      # drawn with the theme's pictures and colors (scripts/mock_preview.py),
+      # else its background.png (build_index.py).
       - name: Build zips and themes.json
         run: >
-          python3 -I scripts/build_index.py
+          "$RUNNER_TEMP/preview-venv/bin/python" -I scripts/build_index.py
           --theme-check "$RUNNER_TEMP/theme_check"
           --themes themes
           --out site
-
-      # Previews are the submitter's preview.png, or else background.png
-      # (build_index.py). A later improvement: render one menu screen per
-      # theme here, once RiftWii's theme kit (tools/theme_kit.cpp) can paint
-      # a whole screen rather than single pictures. That needs the host
-      # library, so a full RiftWii checkout and cmake.
 
       - name: Upload the site
         uses: actions/upload-pages-artifact@v3
