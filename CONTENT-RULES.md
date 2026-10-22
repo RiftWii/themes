@@ -32,9 +32,12 @@ scratch: rounded white tiles, a curved bottom bar or soft blue highlights
 are ideas, not copies. RiftWii's own default look is already drawn that
 way.
 
-A `preview.png` screenshot follows the same rule. Show the menu with no
-game covers, box art or banners (the names view with empty places works
-well): those pictures belong to the games' publishers.
+A `preview.png` screenshot follows the same rule. It must show the theme
+itself: RiftWii's Home with the theme on, with no Nintendo material, no game
+covers, box art or banners, and no real game names beyond RiftWii's own
+words in its menu. Those pictures and titles belong to the games'
+publishers. An empty SD card or one with only homebrew shows a clean Home
+(the names view with empty places works well).
 
 ## 3. Allowed licenses
 

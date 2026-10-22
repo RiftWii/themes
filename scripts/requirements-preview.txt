@@ -1,0 +1,4 @@
+# Pillow draws the mock previews (scripts/mock_preview.py). Pinned to the
+# version the previews were tried with, so a publish draws the same
+# pictures tomorrow; raise it deliberately and look at the samples first.
+Pillow==12.3.0

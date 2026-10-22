@@ -12,7 +12,9 @@ site-url.txt at the repository's root, the one place it is written down;
 Run it only on themes that passed validate_theme.py (publish.yml does both).
 
 site/themes/<folder>.zip   the theme, its files under "<folder>/"
-site/previews/<folder>.png a preview picture, when the theme has one
+site/previews/<folder>.png a preview picture: the theme's preview.png, else a
+                           mock of RiftWii's Home drawn with the theme
+                           (mock_preview.py), else its background.png
 site/themes.json           the list RiftWii (in future) and the themes page browse
 site/index.html            a redirect to the themes page on the main website
 
@@ -34,7 +36,7 @@ from pathlib import Path
 # Run with "python3 -I", which leaves the script's own folder off the path.
 sys.dont_write_bytecode = True  # keep __pycache__ out of the checkout
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_theme import PREVIEW_NAME, parse_ini_with_riftwii, read_license  # noqa: E402
+from validate_theme import PREVIEW_NAME, load_image_sizes, parse_ini_with_riftwii, read_license  # noqa: E402
 
 INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
@@ -59,6 +61,35 @@ def build_zip(theme_dir, zip_path):
     return len(names), unpacked
 
 
+def make_preview(theme_dir, target, theme_check, image_sizes, mock_allowed):
+    """Writes the theme's preview to `target` and returns True, or returns
+    False when the theme has no picture to show at all.
+
+    In order: the submitter's own screenshot (preview.png); a mock of
+    RiftWii's Home drawn with the theme (mock_preview.py, which needs
+    Pillow); the theme's background.png. Drawing is a nicety, so when it
+    can't happen (no Pillow, an unreadable theme) the publish goes on with
+    the background and says so, rather than failing every theme."""
+    shipped = theme_dir / PREVIEW_NAME
+    if shipped.is_file():
+        shutil.copyfile(shipped, target)
+        return True
+    if mock_allowed:
+        try:
+            import mock_preview  # noqa: PLC0415 (Pillow is optional)
+            mock_preview.write_mock(theme_dir, theme_check, target, image_sizes)
+            return True
+        except Exception as problem:  # noqa: BLE001 any failure means "use the background"
+            target.unlink(missing_ok=True)
+            print(f"::warning::{theme_dir.name}: could not draw the mock preview "
+                  f"({type(problem).__name__}: {problem}); using the background instead")
+    background = theme_dir / "background.png"
+    if background.is_file():
+        shutil.copyfile(background, target)
+        return True
+    return False
+
+
 def sha256_of(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -69,6 +100,8 @@ def main():
     parser.add_argument("--themes", type=Path, required=True)
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--base-url", help="where the site is served; default: site-url.txt")
+    parser.add_argument("--no-mock", dest="mock", action="store_false",
+                        help="don't draw a mock preview for themes without a preview.png (needs Pillow)")
     args = parser.parse_args()
 
     base_url = args.base_url or SITE_URL_FILE.read_text(encoding="utf-8").strip()
@@ -76,6 +109,7 @@ def main():
     (args.out / "themes").mkdir(parents=True, exist_ok=True)
     (args.out / "previews").mkdir(parents=True, exist_ok=True)
 
+    image_sizes = load_image_sizes(args.theme_check)
     entries = []
     theme_dirs = sorted(path for path in args.themes.iterdir() if path.is_dir()) if args.themes.is_dir() else []
     for theme_dir in theme_dirs:
@@ -86,16 +120,9 @@ def main():
         zip_path = args.out / "themes" / f"{folder}.zip"
         file_count, unpacked = build_zip(theme_dir, zip_path)
 
-        # The submitter's own screenshot (preview.png) when there is one,
-        # else the theme's background. A rendered menu screen would be
-        # better, but RiftWii's theme kit (tools/theme_kit.cpp) paints
-        # single pictures, not whole screens.
-        preview = None
-        for candidate in (PREVIEW_NAME, "background.png"):
-            if (theme_dir / candidate).is_file():
-                shutil.copyfile(theme_dir / candidate, args.out / "previews" / f"{folder}.png")
-                preview = f"{base_url}previews/{folder}.png"
-                break
+        drawn = make_preview(theme_dir, args.out / "previews" / f"{folder}.png", args.theme_check,
+                             image_sizes, args.mock)
+        preview = f"{base_url}previews/{folder}.png" if drawn else None
 
         entries.append({
             "folder": folder,
