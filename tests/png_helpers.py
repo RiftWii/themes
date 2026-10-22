@@ -38,15 +38,6 @@ def make_png(width, height, colour=(40, 90, 160), padding=0):
             + chunk(b"IDAT", zlib.compress(bytes(rows), 9)) + text + chunk(b"IEND", b""))
 
 
-def make_png_bomb(width=640, height=480, claimed_rows=40000):
-    """A PNG whose header says 640x480 but whose zlib stream inflates to far
-    more pixel data than that (about 77 MB from a few hundred KB)."""
-    row = b"\x00" + bytes(width * 3)
-    header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header)
-            + chunk(b"IDAT", zlib.compress(row * claimed_rows, 9)) + chunk(b"IEND", b""))
-
-
 # A theme_check that answers like the real one for a theme with only a
 # name and an author: "images" lists two pictures, "ini" prints the fields.
 STUB_THEME_CHECK = """#!/bin/sh

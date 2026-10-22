@@ -11,9 +11,9 @@ Read CONTENT-RULES.md first. Every box is required for a theme.
 
 - Folder: `themes/...`
 - What it looks like (a screenshot from RiftWii or Dolphin helps the review).
-  Add a `preview.png` (640x480, a screenshot of Home with your theme on, no
-  game covers or real game names) to the folder so the site and RiftWii's
-  theme browser show your theme, not just its background:
+  Screenshots in this description help reviewers (no game covers or real
+  game names). The site's preview is drawn for you, so do not add a
+  `preview.png` to the folder:
 
 ## Credits
 

@@ -5,8 +5,8 @@
 
     mock_preview.py --theme-check BIN --out DIR THEME_DIR...
 
-A theme that ships no preview.png still needs a preview that says how its
-menu looks, and a gradient background says nothing about that. This draws
+Every theme's preview is drawn, so all themes look alike and are easy to
+compare. A gradient background says nothing about how a menu looks. This draws
 the theme's own pictures and colors into RiftWii's Home layout: the grid of
 tiles (one focused), the bottom bar with its clock, the round buttons and
 the page label. It is a mock, not a screenshot: tile contents are

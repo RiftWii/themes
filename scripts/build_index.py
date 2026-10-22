@@ -12,9 +12,9 @@ site-url.txt at the repository's root, the one place it is written down;
 Run it only on themes that passed validate_theme.py (publish.yml does both).
 
 site/themes/<folder>.zip   the theme, its files under "<folder>/"
-site/previews/<folder>.png a preview picture: the theme's preview.png, else a
-                           mock of RiftWii's Home drawn with the theme
-                           (mock_preview.py), else its background.png
+site/previews/<folder>.png a preview picture: a mock of RiftWii's Home drawn
+                           with the theme (mock_preview.py), else, when
+                           drawing fails (no Pillow), its background.png
 site/themes.json           the list RiftWii (in future) and the themes page browse
 site/index.html            a redirect to the themes page on the main website
 
@@ -46,7 +46,8 @@ ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
 
 def build_zip(theme_dir, zip_path):
     """Writes the theme's zip and returns (file count, unpacked bytes)."""
-    # preview.png is for the website, not the Wii, so it stays out.
+    # validate_theme.py rejects a preview.png, but if one ever got here it
+    # would still not belong on a Wii, so it stays out.
     names = sorted(entry.name for entry in theme_dir.iterdir() if entry.is_file() and entry.name != PREVIEW_NAME)
     unpacked = 0
     with zipfile.ZipFile(zip_path, "w") as archive:
@@ -65,15 +66,11 @@ def make_preview(theme_dir, target, theme_check, image_sizes, mock_allowed):
     """Writes the theme's preview to `target` and returns True, or returns
     False when the theme has no picture to show at all.
 
-    In order: the submitter's own screenshot (preview.png); a mock of
-    RiftWii's Home drawn with the theme (mock_preview.py, which needs
-    Pillow); the theme's background.png. Drawing is a nicety, so when it
+    Every theme's preview is a mock of RiftWii's Home drawn with the theme
+    (mock_preview.py, which needs Pillow), so all themes look alike. A
+    submitter's own picture is never read. Drawing is a nicety, so when it
     can't happen (no Pillow, an unreadable theme) the publish goes on with
-    the background and says so, rather than failing every theme."""
-    shipped = theme_dir / PREVIEW_NAME
-    if shipped.is_file():
-        shutil.copyfile(shipped, target)
-        return True
+    the theme's background.png and says so, rather than failing every theme."""
     if mock_allowed:
         try:
             import mock_preview  # noqa: PLC0415 (Pillow is optional)
@@ -101,7 +98,7 @@ def main():
     parser.add_argument("--out", type=Path, required=True)
     parser.add_argument("--base-url", help="where the site is served; default: site-url.txt")
     parser.add_argument("--no-mock", dest="mock", action="store_false",
-                        help="don't draw a mock preview for themes without a preview.png (needs Pillow)")
+                        help="don't draw mock previews; use each theme's background.png (drawing needs Pillow)")
     args = parser.parse_args()
 
     base_url = args.base_url or SITE_URL_FILE.read_text(encoding="utf-8").strip()
