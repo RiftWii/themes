@@ -1,0 +1,22 @@
+License: CC0-1.0
+Author: RiftWii contributors
+
+Vaporwave, a theme for RiftWii: a striped sunset over a neon grid that
+rolls toward you, behind dark violet glass with hot pink and cyan.
+
+To the extent possible under law, the author has waived all copyright and
+related or neighboring rights to this theme (theme.ini and every PNG
+picture in its folder), under Creative Commons CC0 1.0 Universal:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+The pictures, including the looping backdrop's 20 frames, were drawn by a
+short Python script from arithmetic alone: no source images, textures or
+fonts. The theme keeps RiftWii's own sounds.
+
+Third-party parts:
+
+- music.ogg: "chill wave friday sept 17" by Alex McCulloch (Pro Sensory),
+  CC0 1.0, from https://opengameart.org/content/chill-wave-friday-sept-17
+  The author asks to be credited by name: thank you, Alex McCulloch.
+  Converted from the original MP3 to Ogg Vorbis (quality 4), otherwise
+  unchanged.
