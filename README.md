@@ -40,6 +40,8 @@ themes/
     background.png     optional pictures, each exactly the size RiftWii needs
     tile.png
     tile_over.png
+    backdrop_00.png    optional looping backdrop: backdrop_00.png,
+    backdrop_01.png    backdrop_01.png, ... as many as [backdrop] frames
     music.ogg          optional menu music (Ogg Vorbis)
     click.wav          optional sound effects: hover, click,
                        home_open, home_close
@@ -52,6 +54,10 @@ The folder is copied as it is to
 - `LICENSE` (format in [CONTENT-RULES.md](CONTENT-RULES.md#the-license-file));
 - any of the pictures listed in docs/THEMES.md, under the same name, at
   exactly the size listed there;
+- a looping backdrop's frames, `backdrop_00.png` up to as many as
+  `theme.ini` asks for under `[backdrop]` with `frames` (docs/THEMES.md,
+  "A looping backdrop"). Keep a `background.png` too: RiftWii versions
+  without looping backdrops show it instead;
 - `music.ogg`;
 - `hover.wav`, `click.wav`, `home_open.wav`, `home_close.wav`, as plain
   16-bit PCM WAV. RiftWii also plays AIFF, but the check reads only WAV;
@@ -79,6 +85,9 @@ It fails if:
   out of the folder (`..`, `/`, `\`, `:`), or the entry is a symlink or a
   subfolder;
 - a picture is not a valid PNG at exactly the size RiftWii needs;
+- a looping backdrop has a frame missing, frames of different sizes, a
+  size that isn't a multiple of 4 from 64x48 to 856x480, more than 4 MiB of
+  frames in RiftWii's memory, or a frame `theme.ini` doesn't ask for;
 - a `preview.png` is in the folder (previews are drawn, not submitted);
 - `theme.ini` has a setting RiftWii can't read (a colour that isn't
   `#RRGGBB`, `corners = round`), or no name or author;
@@ -113,6 +122,7 @@ only: `python3 -I -m unittest discover -s tests`. validate.yml runs them too.
 | --- | --- | --- |
 | `theme.ini` | 64 KiB | RiftWii does not read a bigger one (`kMaxIni`) |
 | Each PNG | 2 MiB, exact size | RiftWii skips bigger or wrong-sized pictures (`kMaxPng`) |
+| Looping backdrop | 2 to 60 frames, 4 MiB as RGB565 (frames x width x height x 2) | RiftWii keeps the whole loop in memory and plays none of it if it doesn't fit |
 | `music.ogg` | 6 MiB, 6 minutes, Vorbis, 44.1/48 kHz | RiftWii skips music over 6 MiB. Six minutes is what 6 MiB holds at the quality docs/THEMES.md recommends, and a reviewer has to listen to all of it |
 | Each sound WAV | 1 MiB, 5 s, 16-bit PCM | RiftWii's own limits for sound effects |
 | Whole theme | 10 MiB | The largest music file plus about twice Bookshelf's pictures (2.2 MiB, the largest bundled theme). It keeps downloads on the Wii's Wi-Fi short and keeps about a hundred themes under GitHub Pages' 1 GB site limit |

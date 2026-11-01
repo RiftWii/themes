@@ -80,6 +80,9 @@ int print_ini(const char* path) {
     std::cout << "stripes\t" << (theme.stripes ? 1 : 0) << '\n';
     std::cout << "gloss\t" << (theme.gloss ? 1 : 0) << '\n';
     std::cout << "bar\t" << (theme.bar_bump ? "bump" : "dip") << '\n';
+    // The looping backdrop ([backdrop] frames, fps): 0 frames for none.
+    // Needs a RiftWii with looping backdrops (KakarottoCake/Riftwii#436).
+    std::cout << "loop\t" << theme.loop_frames << '\t' << theme.loop_fps << '\n';
     for (const riftwii::ThemeColorKey& entry : riftwii::theme_color_keys()) {
         std::cout << "color\t" << entry.key << '\t' << riftwii::format_theme_color(theme.colors.*(entry.field)) << '\n';
     }
