@@ -52,6 +52,9 @@ def validate(files, frames=None):
         theme_check.write_text(STUB_THEME_CHECK_WITH_LOOP, encoding="utf-8")
         theme_check.chmod(0o755)
         report = validate_theme.Report()
+        # The plain "name: message" lines, also inside a GitHub Action (which
+        # would otherwise get annotations with the file in front).
+        report.in_actions = False
         output = io.StringIO()
         with redirect_stdout(output):
             validate_theme.validate_theme(
