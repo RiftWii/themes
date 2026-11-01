@@ -64,6 +64,15 @@ PREVIEW_NAME = "preview.png"
 PREVIEW_REJECTED = ("preview.png is no longer used: every theme gets a drawn preview of "
                     "RiftWii's Home. Remove it from the folder.")
 
+# A looping backdrop's frames (RiftWii's docs/THEMES.md, "A looping
+# backdrop"): backdrop_00.png up to the [backdrop] frames the theme.ini asks
+# for, all one size, kept as RGB565 in at most 4 MiB. RiftWii shows no loop
+# at all if any of it is wrong, so each rule fails the check.
+BACKDROP_FRAME = re.compile(r"^backdrop_(\d\d)\.png$")
+LOOP_MIN_SIZE = (64, 48)
+LOOP_MAX_SIZE = (856, 480)
+MAX_LOOP_BYTES = 4 * 1024 * 1024
+
 # Folder names become zip names, URLs and folders on a FAT32 SD card.
 # RiftWii's own update pack also allows spaces (theme_pack_name_ok in
 # src/art/themepack.cpp); they are left out here so URLs need no escaping.
@@ -145,6 +154,22 @@ def parse_ini_with_riftwii(theme_check, ini_path):
         elif field == "note":
             notes.append(value)
     return name, author, notes
+
+
+def read_loop_with_riftwii(theme_check, ini_path):
+    """(frames, fps) of the theme's looping backdrop as RiftWii's
+    parse_theme() reads them; (0, 0) for none, and also when theme_check was
+    built from a RiftWii without looping backdrops (no "loop" line)."""
+    result = subprocess.run([theme_check, "ini", str(ini_path)], capture_output=True, text=True,
+                            encoding="utf-8", errors="replace")
+    if result.returncode != 0:
+        raise RuntimeError(f"theme_check failed: {result.stderr.strip()}")
+    for line in result.stdout.splitlines():
+        field, _, value = line.partition("\t")
+        if field == "loop":
+            frames, _, fps = value.partition("\t")
+            return int(frames), int(fps or 0)
+    return 0, 0
 
 
 # --- File-format checks ----------------------------------------------------
@@ -328,13 +353,23 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
         report.error(where, "folder name must be 1-32 letters, digits, '_' or '-', starting with a letter or digit")
 
     files = walk_theme(theme_dir, where, report)
-    allowed = FIXED_FILES | OPTIONAL_FILES | set(image_sizes)
+    loop_frames = 0
+    ini = files.get("theme.ini")
+    if ini is not None and ini.stat().st_size <= MAX_INI_BYTES:
+        loop_frames, _fps = read_loop_with_riftwii(theme_check, ini)
+    frame_names = [f"backdrop_{i:02d}.png" for i in range(loop_frames)]
+    allowed = FIXED_FILES | OPTIONAL_FILES | set(image_sizes) | set(frame_names)
 
     if PREVIEW_NAME in files:
         report.error(f"{where}/{PREVIEW_NAME}", PREVIEW_REJECTED)
     for name in sorted(set(files) - allowed - {PREVIEW_NAME}):
+        if BACKDROP_FRAME.match(name):
+            report.error(f"{where}/{name}", f"a looping backdrop frame the theme.ini's [backdrop] frames "
+                                             f"(= {loop_frames}) doesn't ask for")
+            continue
         report.error(f"{where}/{name}", "not a file RiftWii uses; allowed are theme.ini, LICENSE, "
-                                         "music.ogg, the four sound WAVs and the pictures in docs/THEMES.md")
+                                         "music.ogg, the four sound WAVs, the pictures in docs/THEMES.md "
+                                         "and a looping backdrop's frames")
     for name in sorted(REQUIRED_FILES - set(files)):
         report.error(where, f"{name} is missing")
 
@@ -342,6 +377,7 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
     if total_bytes > MAX_THEME_BYTES:
         report.error(where, f"theme is {total_bytes / 1048576:.1f} MiB; the limit is {MAX_THEME_BYTES // 1048576} MiB")
 
+    frame_sizes = {}
     for name, path in files.items():
         if name not in allowed:
             continue
@@ -355,6 +391,10 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
 
         if name in image_sizes:
             check_png(name, data, size, image_sizes[name], file_where, report)
+        elif name in frame_names:
+            frame_size = check_frame_png(data, size, file_where, report)
+            if frame_size:
+                frame_sizes[name] = frame_size
         elif name == "music.ogg":
             check_music(data, size, file_where, report)
         elif name.endswith(".wav"):
@@ -363,6 +403,8 @@ def validate_theme(theme_dir, image_sizes, theme_check, flagged, approved, repor
             else:
                 check_wav(path, file_where, report)
 
+    if loop_frames:
+        check_loop(frame_names, files, frame_sizes, where, report)
     if "theme.ini" in files:
         check_ini(files["theme.ini"], theme_check, folder, where, report)
     if "LICENSE" in files:
@@ -386,6 +428,56 @@ def check_png(name, data, size, expected, where, report):
                             f"for {name} (a picture of any other size is skipped)")
     if SUSPICIOUS_WORDS.search(text):
         report.warning(where, f"PNG text mentions {SUSPICIOUS_WORDS.search(text).group(0)!r}; check where it came from")
+
+
+def check_frame_png(data, size, where, report):
+    """A looping backdrop frame's (width, height), or None when RiftWii
+    couldn't read it; its size is checked with the others (check_loop)."""
+    if size > MAX_PNG_BYTES:
+        report.error(where, f"{size} bytes; RiftWii skips pictures over {MAX_PNG_BYTES} bytes")
+        return None
+    try:
+        width, height, text = read_png(data)
+    except ValueError as problem:
+        report.error(where, str(problem))
+        return None
+    if SUSPICIOUS_WORDS.search(text):
+        report.warning(where, f"PNG text mentions {SUSPICIOUS_WORDS.search(text).group(0)!r}; check where it came from")
+    return width, height
+
+
+def check_loop(frame_names, files, frame_sizes, where, report):
+    """The rules RiftWii loads a looping backdrop by: every frame there,
+    all the first one's size, a size the GPU's tiles fit, and 4 MiB."""
+    for name in frame_names:
+        if name not in files:
+            report.error(f"{where}/{name}", "missing: the theme.ini's [backdrop] frames asks for it, "
+                                            "and RiftWii shows no loop at all without every frame")
+    first = frame_sizes.get(frame_names[0])
+    if not first:
+        return
+    width, height = first
+    first_where = f"{where}/{frame_names[0]}"
+    if width % 4 or height % 4:
+        report.error(first_where, f"is {width}x{height}; a looping backdrop's frames need a width and "
+                                  "height that are multiples of 4")
+    if (width < LOOP_MIN_SIZE[0] or height < LOOP_MIN_SIZE[1] or
+            width > LOOP_MAX_SIZE[0] or height > LOOP_MAX_SIZE[1]):
+        report.error(first_where, f"is {width}x{height}; a looping backdrop's frames are "
+                                  f"{LOOP_MIN_SIZE[0]}x{LOOP_MIN_SIZE[1]} to {LOOP_MAX_SIZE[0]}x{LOOP_MAX_SIZE[1]}")
+    for name in frame_names[1:]:
+        if name in frame_sizes and frame_sizes[name] != first:
+            other = frame_sizes[name]
+            report.error(f"{where}/{name}", f"is {other[0]}x{other[1]}, not the {width}x{height} of {frame_names[0]}; "
+                                            "every frame must be the same size")
+    loop_bytes = len(frame_names) * width * height * 2
+    if loop_bytes > MAX_LOOP_BYTES:
+        report.error(where, f"the looping backdrop is {len(frame_names)} frames of {width}x{height}, "
+                            f"{loop_bytes / 1048576:.1f} MiB in RiftWii's memory; the limit is 4 MiB "
+                            "(fewer or smaller frames)")
+    if "background.png" not in files:
+        report.warning(where, "has a looping backdrop but no background.png: RiftWii versions without "
+                              "looping backdrops show a plain painted wall instead")
 
 
 def check_music(data, size, where, report):
