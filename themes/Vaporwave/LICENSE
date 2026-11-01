@@ -11,6 +11,12 @@ https://creativecommons.org/publicdomain/zero/1.0/
 
 The pictures, including the looping backdrop's 20 frames, were drawn by a
 short Python script from arithmetic alone: no source images, textures or
-fonts. The theme keeps RiftWii's own sounds and music.
+fonts. The theme keeps RiftWii's own sounds.
 
-Third-party parts: none.
+Third-party parts:
+
+- music.ogg: "chill wave friday sept 17" by Alex McCulloch (Pro Sensory),
+  CC0 1.0, from https://opengameart.org/content/chill-wave-friday-sept-17
+  The author asks to be credited by name: thank you, Alex McCulloch.
+  Converted from the original MP3 to Ogg Vorbis (quality 4), otherwise
+  unchanged.
