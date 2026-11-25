@@ -56,10 +56,12 @@ jobs:
           ref: ${{ env.RIFTWII_REF }}
           path: riftwii
           persist-credentials: false
-          # theme.cpp needs only its header, so skip the rest of the repo.
+          # theme.cpp needs only its header and textlines.hpp (since
+          # KakarottoCake/Riftwii#608), so skip the rest of the repo.
           sparse-checkout: |
             src/art/theme.cpp
             include/riftwii/theme.hpp
+            include/riftwii/textlines.hpp
           sparse-checkout-cone-mode: false
 
       - name: Build theme_check

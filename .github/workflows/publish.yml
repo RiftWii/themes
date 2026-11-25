@@ -41,6 +41,7 @@ jobs:
           sparse-checkout: |
             src/art/theme.cpp
             include/riftwii/theme.hpp
+            include/riftwii/textlines.hpp
           sparse-checkout-cone-mode: false
 
       - name: Build theme_check
