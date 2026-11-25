@@ -1,0 +1,19 @@
+License: CC0-1.0
+Author: RiftWii contributors
+
+Plaza, a theme for RiftWii: an airy white wall with ghost tiles and glossy
+bubbles drifting across it, thick frosted glass bezels, big glossy arrows,
+sky blue game boxes and bright cyan for what is lit.
+
+To the extent possible under law, the author has waived all copyright and
+related or neighboring rights to this theme (theme.ini, every PNG picture,
+music.ogg and the WAV sounds in its folder), under Creative Commons CC0 1.0
+Universal: https://creativecommons.org/publicdomain/zero/1.0/
+
+The pictures, including the looping backdrop's 36 frames, the music and the
+sounds were made by RiftWii's tools/make_plaza_theme.py
+(https://github.com/KakarottoCake/Riftwii) from arithmetic alone: no source
+images, textures, logos, fonts, recordings or samples. The tune is an
+original composition.
+
+Third-party parts: none.
