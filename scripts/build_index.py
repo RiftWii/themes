@@ -42,6 +42,10 @@ INDEX_SCHEMA = 1
 SITE_URL_FILE = Path(__file__).resolve().parent.parent / "site-url.txt"
 SITE_PAGE = Path(__file__).resolve().parent.parent / "web" / "index.html"
 ZIP_DATE = (1980, 1, 1, 0, 0, 0)  # the earliest date a zip can store
+# The biggest preview RiftWii fetches (kThemePreviewMaxBytes in its
+# include/riftwii/themelist.hpp). A bigger one shows "No preview" in the
+# theme browser: Wave's drawn preview, with its photo-like backdrop, was 268 KB.
+PREVIEW_MAX_BYTES = 256 * 1024
 
 
 def build_zip(theme_dir, zip_path):
@@ -87,6 +91,28 @@ def make_preview(theme_dir, target, theme_check, image_sizes, mock_allowed):
     return False
 
 
+def fit_preview(target):
+    """Keeps a preview within PREVIEW_MAX_BYTES: one that is bigger is saved
+    again with 256 colours, which RiftWii reads too and which is plenty for
+    the small picture its theme browser shows. Returns False (and removes the
+    file) when even that does not fit, so the theme is listed without one."""
+    if target.stat().st_size <= PREVIEW_MAX_BYTES:
+        return True
+    try:
+        from PIL import Image  # noqa: PLC0415 (Pillow is optional)
+        with Image.open(target) as picture:
+            fewer = picture.convert("RGB").quantize(colors=256, method=Image.Quantize.MEDIANCUT)
+        fewer.save(target, format="PNG", optimize=True)
+    except Exception as problem:  # noqa: BLE001 any failure means "no preview"
+        print(f"::warning::{target.stem}: could not shrink the preview ({type(problem).__name__}: {problem})")
+    if target.stat().st_size <= PREVIEW_MAX_BYTES:
+        print(f"{target.stem}: preview saved with 256 colours to fit RiftWii's {PREVIEW_MAX_BYTES} bytes")
+        return True
+    print(f"::warning::{target.stem}: the preview is over {PREVIEW_MAX_BYTES} bytes; listed without one")
+    target.unlink(missing_ok=True)
+    return False
+
+
 def sha256_of(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -117,8 +143,9 @@ def main():
         zip_path = args.out / "themes" / f"{folder}.zip"
         file_count, unpacked = build_zip(theme_dir, zip_path)
 
-        drawn = make_preview(theme_dir, args.out / "previews" / f"{folder}.png", args.theme_check,
-                             image_sizes, args.mock)
+        preview_path = args.out / "previews" / f"{folder}.png"
+        drawn = make_preview(theme_dir, preview_path, args.theme_check, image_sizes, args.mock)
+        drawn = drawn and fit_preview(preview_path)
         preview = f"{base_url}previews/{folder}.png" if drawn else None
 
         entries.append({
